@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Dagplanner">
+<title>Dagplanner</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --hoog: #5B4FCF; --hoog-bg: #F0EFFE; --hoog-border: #C4BFEE;
+  --mid: #B06A10;  --mid-bg: #FEF6E7;  --mid-border: #F0C97A;
+  --laag: #1A7A5E; --laag-bg: #E8F8F3; --laag-border: #7ED4BC;
+  --bg: #FAF9F7; --surface: #FFFFFF; --surface2: #F4F2EF;
+  --text: #1C1B19; --muted: #807D78; --faint: #C8C5BF;
+  --border: rgba(0,0,0,0.09); --border2: rgba(0,0,0,0.15);
+  --r: 14px; --r-sm: 9px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --hoog: #9E95F0; --hoog-bg: #1E1B38; --hoog-border: #3D3570;
+    --mid: #F0B84A;  --mid-bg: #261C07;  --mid-border: #5C3E0E;
+    --laag: #3EC9A7; --laag-bg: #0A231E; --laag-border: #1A5C4A;
+    --bg: #111110; --surface: #1C1B19; --surface2: #252420;
+    --text: #EEEBe6; --muted: #888480; --faint: #3A3835;
+    --border: rgba(255,255,255,0.08); --border2: rgba(255,255,255,0.14);
+  }
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;max-width:480px;margin:0 auto;font-size:15px}
+
+.nav{display:flex;background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:20}
+.nav-tab{flex:1;padding:14px 4px 12px;border:none;background:transparent;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;color:var(--muted);cursor:pointer;letter-spacing:0.04em;border-bottom:2px solid transparent;transition:all 0.15s}
+.nav-tab.active{color:var(--text);border-bottom-color:var(--text)}
+
+.header{padding:24px 20px 16px;background:var(--bg)}
+.greeting{font-family:'DM Serif Display',serif;font-size:26px;line-height:1.2}
+.subline{font-size:12px;color:var(--muted);margin-top:3px;font-weight:300}
+.progress-wrap{margin-top:14px;display:flex;align-items:center;gap:10px}
+.progress-bar{flex:1;height:3px;background:var(--faint);border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;background:var(--laag);border-radius:2px;transition:width 0.5s ease}
+.progress-label{font-size:12px;color:var(--muted);white-space:nowrap}
+
+.energy-strip{display:flex;gap:6px;padding:0 20px 16px;background:var(--bg)}
+.etab{flex:1;padding:8px 4px;border:1px solid var(--border2);border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;background:transparent;color:var(--muted);transition:all 0.15s;font-family:'DM Sans',sans-serif;text-align:center}
+.etab.act-hoog{background:var(--hoog-bg);color:var(--hoog);border-color:var(--hoog-border)}
+.etab.act-mid{background:var(--mid-bg);color:var(--mid);border-color:var(--mid-border)}
+.etab.act-laag{background:var(--laag-bg);color:var(--laag);border-color:var(--laag-border)}
+.energy-hint{font-size:12px;color:var(--muted);font-style:italic;padding:0 20px 14px;min-height:16px}
+
+.section{padding:0 20px 120px}
+.sec-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;margin-top:4px}
+.sec-title{font-size:11px;font-weight:500;letter-spacing:0.07em;text-transform:uppercase;color:var(--muted)}
+.sec-badge{font-size:11px;color:var(--muted);background:var(--surface2);border-radius:8px;padding:2px 8px}
+
+.gmail-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:11px;border:1px dashed var(--border2);border-radius:var(--r);background:transparent;color:var(--muted);font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;margin-bottom:14px;transition:all 0.15s}
+.gmail-btn:hover{border-color:#D44638;color:#D44638}
+.gmail-btn.connected{border-style:solid;border-color:var(--laag-border);color:var(--laag);background:var(--laag-bg)}
+.gmail-dot{width:8px;height:8px;border-radius:50%;background:currentColor;flex-shrink:0}
+
+.task{display:flex;align-items:flex-start;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:13px 14px;margin-bottom:7px;transition:opacity 0.2s;position:relative;overflow:hidden}
+.task::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px}
+.task.e-hoog::before{background:var(--hoog)}
+.task.e-mid::before{background:var(--mid)}
+.task.e-laag::before{background:var(--laag)}
+.task.recurring-task::after{content:'↻';position:absolute;right:36px;top:13px;font-size:11px;color:var(--faint)}
+.task.done{opacity:0.38}
+.check{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--faint);background:transparent;cursor:pointer;flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;transition:all 0.15s}
+.task.done .check{background:var(--laag);border-color:var(--laag)}
+.task-body{flex:1;min-width:0}
+.task-name{font-size:14px;line-height:1.4;color:var(--text)}
+.task.done .task-name{text-decoration:line-through}
+.task-meta{display:flex;gap:5px;margin-top:5px;flex-wrap:wrap}
+.pill{font-size:11px;padding:2px 8px;border-radius:7px;font-weight:500;white-space:nowrap}
+.pill-hoog{background:var(--hoog-bg);color:var(--hoog)}
+.pill-mid{background:var(--mid-bg);color:var(--mid)}
+.pill-laag{background:var(--laag-bg);color:var(--laag)}
+.pill-t{background:var(--surface2);color:var(--muted);font-weight:400}
+.pill-gmail{background:#fdecea;color:#b03020;font-weight:400}
+@media(prefers-color-scheme:dark){.pill-gmail{background:#2a1210;color:#f08070}}
+.del-btn{background:none;border:none;cursor:pointer;color:var(--faint);font-size:18px;padding:0 2px;line-height:1;flex-shrink:0;transition:color 0.15s}
+.del-btn:hover{color:var(--muted)}
+.empty{text-align:center;padding:36px 16px;color:var(--muted);font-size:13px;line-height:1.8}
+.empty-icon{font-size:28px;margin-bottom:8px}
+
+.fab{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;padding:14px 20px 28px;background:var(--bg);border-top:1px solid var(--border)}
+.add-input{width:100%;padding:11px 14px;border:1px solid var(--border2);border-radius:var(--r-sm);background:var(--surface);color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;margin-bottom:8px}
+.add-input:focus{border-color:var(--hoog)}
+.add-input::placeholder{color:var(--faint)}
+.add-row{display:flex;gap:7px}
+.sel{flex:1;padding:9px 10px;border:1px solid var(--border2);border-radius:var(--r-sm);background:var(--surface);color:var(--text);font-size:12px;font-family:'DM Sans',sans-serif;outline:none;appearance:none;cursor:pointer}
+.add-btn{padding:9px 16px;border:none;border-radius:var(--r-sm);background:var(--text);color:var(--bg);font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;transition:opacity 0.15s}
+.add-btn:active{opacity:0.7}
+
+.week-section{padding:0 20px 40px}
+.week-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:10px}
+.week-card-title{font-size:13px;font-weight:500;margin-bottom:10px;color:var(--text)}
+.week-stat{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px}
+.week-stat:last-child{border-bottom:none}
+.week-stat-label{color:var(--muted)}
+.week-stat-val{font-weight:500}
+.week-done-list{list-style:none;font-size:13px;color:var(--muted);line-height:2}
+.week-done-list li::before{content:'✓  ';color:var(--laag)}
+.week-done-list li.open::before{content:'○  ';color:var(--faint)}
+
+.rec-section{padding:0 20px 120px}
+.rec-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:13px 14px;margin-bottom:7px;display:flex;align-items:center;gap:10px}
+.rec-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.rec-dot.e-hoog{background:var(--hoog)}
+.rec-dot.e-mid{background:var(--mid)}
+.rec-dot.e-laag{background:var(--laag)}
+.rec-body{flex:1;min-width:0}
+.rec-name{font-size:14px;color:var(--text)}
+.rec-meta{font-size:11px;color:var(--muted);margin-top:3px}
+.rec-del{background:none;border:none;cursor:pointer;color:var(--faint);font-size:18px;line-height:1;transition:color 0.15s}
+.rec-del:hover{color:var(--muted)}
+.add-rec-form{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-top:14px}
+.add-rec-title{font-size:12px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px}
+.rec-input{width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:var(--r-sm);background:var(--bg);color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;margin-bottom:8px}
+.rec-input:focus{border-color:var(--hoog)}
+.rec-row{display:flex;gap:7px;flex-wrap:wrap}
+.rec-sel{flex:1;min-width:90px;padding:8px 10px;border:1px solid var(--border2);border-radius:var(--r-sm);background:var(--bg);color:var(--text);font-size:12px;font-family:'DM Sans',sans-serif;outline:none;appearance:none}
+.rec-add-btn{padding:8px 14px;border:none;border-radius:var(--r-sm);background:var(--text);color:var(--bg);font-size:12px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap}
+
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:100;display:flex;align-items:flex-end;justify-content:center}
+.modal{background:var(--surface);border-radius:20px 20px 0 0;padding:28px 24px 40px;width:100%;max-width:480px;max-height:85vh;overflow-y:auto}
+.modal h2{font-family:'DM Serif Display',serif;font-size:22px;margin-bottom:8px}
+.modal p{font-size:13px;color:var(--muted);line-height:1.7;margin-bottom:12px}
+.modal ol{font-size:13px;color:var(--muted);line-height:2.2;padding-left:18px;margin-bottom:14px}
+.modal-input{width:100%;padding:11px 14px;border:1px solid var(--border2);border-radius:var(--r-sm);background:var(--bg);color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;margin-bottom:10px}
+.modal-input:focus{border-color:var(--hoog)}
+.modal-btn{width:100%;padding:12px;border:none;border-radius:var(--r-sm);background:var(--text);color:var(--bg);font-size:14px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;margin-bottom:8px}
+.modal-cancel{width:100%;padding:10px;border:1px solid var(--border2);border-radius:var(--r-sm);background:transparent;color:var(--muted);font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif}
+.code-block{background:var(--surface2);border-radius:var(--r-sm);padding:10px 12px;font-family:monospace;font-size:12px;color:var(--text);word-break:break-all;margin-bottom:14px;border:1px solid var(--border);user-select:all}
+.mlink{color:var(--hoog);text-decoration:underline;cursor:pointer}
+.modal-step{display:flex;gap:10px;margin-bottom:8px;font-size:13px;color:var(--muted);line-height:1.6}
+.modal-step-num{width:22px;height:22px;border-radius:50%;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;color:var(--text);flex-shrink:0;margin-top:1px}
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <button class="nav-tab active" data-tab="today" onclick="switchTab('today')">Vandaag</button>
+  <button class="nav-tab" data-tab="week" onclick="switchTab('week')">Week</button>
+  <button class="nav-tab" data-tab="recurring" onclick="switchTab('recurring')">Terugkerend</button>
+  <button class="nav-tab" data-tab="all" onclick="switchTab('all')">Alles</button>
+</div>
+
+<!-- TODAY -->
+<div id="tab-today">
+  <div class="header">
+    <div class="greeting" id="greeting">Goedemorgen</div>
+    <div class="subline" id="date-str"></div>
+    <div class="progress-wrap">
+      <div class="progress-bar"><div class="progress-fill" id="prog" style="width:0%"></div></div>
+      <div class="progress-label" id="prog-label">0 van 0</div>
+    </div>
+  </div>
+  <div class="energy-strip">
+    <button class="etab" id="et-hoog" onclick="toggleEnergy('hoog')">⚡ Scherp</button>
+    <button class="etab" id="et-mid"  onclick="toggleEnergy('mid')">☁️ Gewoon</button>
+    <button class="etab" id="et-laag" onclick="toggleEnergy('laag')">🌿 Moe</button>
+  </div>
+  <div class="energy-hint" id="ehint"></div>
+  <div class="section">
+    <div class="sec-head">
+      <div class="sec-title">Taken vandaag</div>
+      <div class="sec-badge" id="today-count">0</div>
+    </div>
+    <button class="gmail-btn" id="gmail-btn" onclick="handleGmail()">
+      <span class="gmail-dot"></span>
+      <span id="gmail-label">Gmail koppelen voor actiepunten</span>
+    </button>
+    <div id="today-list"></div>
+  </div>
+</div>
+
+<!-- WEEK -->
+<div id="tab-week" style="display:none">
+  <div class="header">
+    <div class="greeting">Weekoverzicht</div>
+    <div class="subline" id="week-range"></div>
+  </div>
+  <div class="week-section" id="week-content"></div>
+</div>
+
+<!-- RECURRING -->
+<div id="tab-recurring" style="display:none">
+  <div class="header">
+    <div class="greeting">Terugkerende taken</div>
+    <div class="subline">Worden elke dag/week automatisch toegevoegd</div>
+  </div>
+  <div class="rec-section">
+    <div id="rec-list"></div>
+    <div class="add-rec-form">
+      <div class="add-rec-title">Nieuwe terugkerende taak</div>
+      <input class="rec-input" id="rec-name" placeholder="Taaknaam…" />
+      <div class="rec-row">
+        <select class="rec-sel" id="rec-energy">
+          <option value="hoog">⚡ Scherp</option>
+          <option value="mid" selected>☁️ Gewoon</option>
+          <option value="laag">🌿 Moe</option>
+        </select>
+        <select class="rec-sel" id="rec-time">
+          <option value="5 min">5 min</option>
+          <option value="15 min" selected>15 min</option>
+          <option value="30 min">30 min</option>
+          <option value="1 uur">1 uur</option>
+        </select>
+        <select class="rec-sel" id="rec-freq">
+          <option value="daily">Dagelijks</option>
+          <option value="mon">Maandag</option>
+          <option value="tue">Dinsdag</option>
+          <option value="wed">Woensdag</option>
+          <option value="thu">Donderdag</option>
+          <option value="fri">Vrijdag</option>
+          <option value="weekly">Elke week</option>
+        </select>
+        <button class="rec-add-btn" onclick="addRecurring()">+ Voeg toe</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ALL -->
+<div id="tab-all" style="display:none">
+  <div class="header">
+    <div class="greeting">Alle taken</div>
+    <div class="subline">Inclusief afgeronde taken</div>
+  </div>
+  <div class="section" id="all-list" style="padding-bottom:40px"></div>
+</div>
+
+<!-- FAB -->
+<div class="fab" id="fab">
+  <input class="add-input" id="new-task" placeholder="Nieuwe taak toevoegen…" />
+  <div class="add-row">
+    <select class="sel" id="new-energy">
+      <option value="hoog">⚡ Scherp</option>
+      <option value="mid" selected>☁️ Gewoon</option>
+      <option value="laag">🌿 Moe</option>
+    </select>
+    <select class="sel" id="new-time">
+      <option value="5 min">5 min</option>
+      <option value="15 min" selected>15 min</option>
+      <option value="30 min">30 min</option>
+      <option value="1 uur">1 uur</option>
+      <option value="2+ uur">2+ uur</option>
+    </select>
+    <button class="add-btn" onclick="addTask()">+ Voeg toe</button>
+  </div>
+</div>
+
+<!-- GMAIL SETUP MODAL -->
+<div class="modal-overlay" id="modal" style="display:none" onclick="closeModalOutside(event)">
+  <div class="modal" id="modal-inner">
+    <h2>Gmail koppelen</h2>
+    <p>Eenmalige setup via Google Cloud (~10 min). Je geeft de app alleen <strong>leestoegang</strong> tot je inbox — er wordt niets verstuurd of gewijzigd.</p>
+
+    <div class="modal-step"><div class="modal-step-num">1</div><div>Ga naar <span class="mlink" onclick="window.open('https://console.cloud.google.com','_blank')">console.cloud.google.com</span> en maak een nieuw project aan (bijv. "Dagplanner")</div></div>
+    <div class="modal-step"><div class="modal-step-num">2</div><div>Ga naar <strong>APIs &amp; Services → Library</strong>, zoek op "Gmail API" en zet hem aan</div></div>
+    <div class="modal-step"><div class="modal-step-num">3</div><div>Ga naar <strong>OAuth consent screen</strong> → kies "External" → vul je naam en e-mail in → sla op</div></div>
+    <div class="modal-step"><div class="modal-step-num">4</div><div>Ga naar <strong>Credentials → Create Credentials → OAuth 2.0 Client ID</strong> → kies type <strong>Web application</strong></div></div>
+    <div class="modal-step"><div class="modal-step-num">5</div><div>Voeg bij <strong>Authorized JavaScript origins</strong> het volgende toe (klik om te kopiëren):</div></div>
+    <div class="code-block" id="origin-block" onclick="copyOrigin()"></div>
+    <div class="modal-step"><div class="modal-step-num">6</div><div>Kopieer je <strong>Client ID</strong> en plak het hieronder</div></div>
+    <input class="modal-input" id="client-id-input" placeholder="xxxxx.apps.googleusercontent.com" />
+    <button class="modal-btn" onclick="saveClientId()">Opslaan en inloggen bij Google</button>
+    <button class="modal-cancel" onclick="closeModal()">Annuleren</button>
+  </div>
+</div>
+
+<script>
+const SK_TASKS  = 'dp_tasks_v3';
+const SK_REC    = 'dp_rec_v1';
+const SK_CLIENT = 'dp_gclient';
+const SK_TOKEN  = 'dp_gtoken';
+
+let tasks = [], recurring = [], activeEnergy = null, currentTab = 'today';
+let nextId = Date.now();
+
+const hints = { hoog:'Je hebt focus — gebruik het voor werk dat ertoe doet.', mid:'Gewone modus: communicatie, kleine stappen, lichte taken.', laag:'Doe alleen wat haalbaar voelt. Moe zijn is geen falen.' };
+const eL = { hoog:'Scherp', mid:'Gewoon', laag:'Moe' };
+const fL = { daily:'Dagelijks', mon:'Maandag', tue:'Dinsdag', wed:'Woensdag', thu:'Donderdag', fri:'Vrijdag', weekly:'Elke week' };
+const dayMap = { mon:1, tue:2, wed:3, thu:4, fri:5 };
+
+function today(){ return new Date().toISOString().split('T')[0]; }
+function todayDow(){ return new Date().getDay(); }
+
+function load(){
+  try{ tasks = JSON.parse(localStorage.getItem(SK_TASKS))||[]; }catch(e){ tasks=[]; }
+  try{ recurring = JSON.parse(localStorage.getItem(SK_REC))||[]; }catch(e){ recurring=[]; }
+  if(!tasks.length) tasks = defaultTasks();
+  if(!recurring.length) recurring = defaultRecurring();
+  injectRecurring();
+}
+function save(){ localStorage.setItem(SK_TASKS, JSON.stringify(tasks)); }
+function saveRec(){ localStorage.setItem(SK_REC, JSON.stringify(recurring)); }
+
+function defaultTasks(){
+  return [
+    {id:nextId++,name:'Mail beantwoorden',energy:'laag',time:'5 min',done:false,date:today(),source:''},
+    {id:nextId++,name:'LinkedIn post schrijven',energy:'mid',time:'15 min',done:false,date:today(),source:''},
+    {id:nextId++,name:'Eerste stap groot project bepalen',energy:'hoog',time:'30 min',done:false,date:today(),source:''},
+  ];
+}
+function defaultRecurring(){
+  return [
+    {id:nextId++,name:'Weekplanning maken',energy:'mid',time:'15 min',freq:'mon'},
+    {id:nextId++,name:'Facturen en administratie checken',energy:'laag',time:'15 min',freq:'fri'},
+    {id:nextId++,name:'Inbox naar nul',energy:'laag',time:'30 min',freq:'daily'},
+  ];
+}
+function injectRecurring(){
+  const dow = todayDow(), t = today();
+  recurring.forEach(r => {
+    const applies = r.freq==='daily' || r.freq==='weekly' || (dayMap[r.freq]===dow);
+    if(!applies) return;
+    if(!tasks.find(x => x.recurring_id===r.id && x.date===t)){
+      tasks.push({id:nextId++,name:r.name,energy:r.energy,time:r.time,done:false,date:t,source:'',recurring_id:r.id});
+    }
+  });
+  save();
+}
+
+function switchTab(tab){
+  currentTab = tab;
+  ['today','week','recurring','all'].forEach(t => {
+    document.getElementById('tab-'+t).style.display = t===tab?'':'none';
+    const btn = document.querySelector('[data-tab="'+t+'"]');
+    if(btn) btn.classList.toggle('active', t===tab);
+  });
+  document.getElementById('fab').style.display = (tab==='today'||tab==='all')?'':'none';
+  if(tab==='today') renderToday();
+  else if(tab==='week') renderWeek();
+  else if(tab==='recurring') renderRecurring();
+  else renderAll();
+}
+
+function toggleEnergy(e){
+  activeEnergy = activeEnergy===e ? null : e;
+  ['hoog','mid','laag'].forEach(x => {
+    document.getElementById('et-'+x).className = 'etab'+(x===activeEnergy?' act-'+x:'');
+  });
+  document.getElementById('ehint').textContent = activeEnergy ? hints[activeEnergy] : '';
+  renderToday();
+}
+
+function renderToday(){
+  let list = tasks.filter(t => t.date===today() && !t.done);
+  if(activeEnergy) list = list.filter(t => t.energy===activeEnergy);
+  const total = tasks.filter(t => t.date===today()).length;
+  const done  = tasks.filter(t => t.date===today() && t.done).length;
+  const pct = total ? Math.round((done/total)*100) : 0;
+  document.getElementById('prog').style.width = pct+'%';
+  document.getElementById('prog-label').textContent = done+' van '+total;
+  document.getElementById('today-count').textContent = list.length;
+
+  const clientId = localStorage.getItem(SK_CLIENT);
+  const token    = localStorage.getItem(SK_TOKEN);
+  const gb = document.getElementById('gmail-btn');
+  const gl = document.getElementById('gmail-label');
+  if(clientId && token){ gb.className='gmail-btn connected'; gl.textContent='Gmail opnieuw scannen'; }
+  else if(clientId){ gb.className='gmail-btn'; gl.textContent='Inloggen en Gmail scannen'; }
+  else{ gb.className='gmail-btn'; gl.textContent='Gmail koppelen voor actiepunten'; }
+
+  document.getElementById('today-list').innerHTML = list.length
+    ? list.map(t => taskHTML(t)).join('')
+    : '<div class="empty"><div class="empty-icon">○</div>'+(activeEnergy?'Geen taken voor dit energieniveau.':'Geen open taken vandaag. Voeg er een toe hieronder.')+'</div>';
+}
+
+function taskHTML(t){
+  return '<div class="task e-'+t.energy+(t.done?' done':'')+(t.recurring_id?' recurring-task':'')+'">'
+    +'<button class="check" onclick="toggle('+t.id+')">'
+    +(t.done?'<svg width="12" height="10" viewBox="0 0 12 10"><polyline points="1,5 4.5,8.5 11,1.5" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>':'')
+    +'</button>'
+    +'<div class="task-body">'
+    +'<div class="task-name">'+esc(t.name)+'</div>'
+    +'<div class="task-meta">'
+    +'<span class="pill pill-'+t.energy+'">'+eL[t.energy]+'</span>'
+    +'<span class="pill pill-t">'+t.time+'</span>'
+    +(t.source==='gmail'?'<span class="pill pill-gmail">Gmail</span>':'')
+    +'</div></div>'
+    +'<button class="del-btn" onclick="del('+t.id+')">×</button>'
+    +'</div>';
+}
+
+function renderWeek(){
+  const d = new Date(), dow = d.getDay();
+  const offset = dow===0 ? -6 : 1-dow;
+  const mon = new Date(d); mon.setDate(d.getDate()+offset);
+  const sun = new Date(mon); sun.setDate(mon.getDate()+6);
+  const fmt = x => x.toLocaleDateString('nl-NL',{day:'numeric',month:'long'});
+  document.getElementById('week-range').textContent = fmt(mon)+' – '+fmt(sun);
+  const weekDates = Array.from({length:7},(_,i)=>{ const x=new Date(mon); x.setDate(mon.getDate()+i); return x.toISOString().split('T')[0]; });
+  const wt = tasks.filter(t => weekDates.includes(t.date));
+  const done = wt.filter(t => t.done), open = wt.filter(t => !t.done);
+  const byE = e => wt.filter(t => t.energy===e).length;
+  document.getElementById('week-content').innerHTML =
+    '<div class="week-card">'
+    +'<div class="week-card-title">Samenvatting deze week</div>'
+    +'<div class="week-stat"><span class="week-stat-label">Totaal ingepland</span><span class="week-stat-val">'+wt.length+'</span></div>'
+    +'<div class="week-stat"><span class="week-stat-label">Afgerond</span><span class="week-stat-val" style="color:var(--laag)">'+done.length+'</span></div>'
+    +'<div class="week-stat"><span class="week-stat-label">Nog open</span><span class="week-stat-val">'+open.length+'</span></div>'
+    +'<div class="week-stat"><span class="week-stat-label">⚡ Scherp-taken</span><span class="week-stat-val">'+byE('hoog')+'</span></div>'
+    +'<div class="week-stat"><span class="week-stat-label">☁️ Gewoon-taken</span><span class="week-stat-val">'+byE('mid')+'</span></div>'
+    +'<div class="week-stat"><span class="week-stat-label">🌿 Moe-taken</span><span class="week-stat-val">'+byE('laag')+'</span></div>'
+    +'</div>'
+    +(done.length?'<div class="week-card"><div class="week-card-title">Afgerond</div><ul class="week-done-list">'+done.map(t=>'<li>'+esc(t.name)+'</li>').join('')+'</ul></div>':'')
+    +(open.length?'<div class="week-card"><div class="week-card-title">Nog te doen</div><ul class="week-done-list">'+open.map(t=>'<li class="open">'+esc(t.name)+'</li>').join('')+'</ul></div>':'');
+}
+
+function renderRecurring(){
+  document.getElementById('rec-list').innerHTML = recurring.length
+    ? recurring.map(r => '<div class="rec-card"><div class="rec-dot e-'+r.energy+'"></div><div class="rec-body"><div class="rec-name">'+esc(r.name)+'</div><div class="rec-meta">'+fL[r.freq]+' · '+r.time+' · '+eL[r.energy]+'</div></div><button class="rec-del" onclick="delRec('+r.id+')">×</button></div>').join('')
+    : '<div class="empty"><div class="empty-icon">↻</div>Nog geen terugkerende taken.</div>';
+}
+function addRecurring(){
+  const name = document.getElementById('rec-name').value.trim();
+  if(!name) return;
+  const r = {id:nextId++,name,energy:document.getElementById('rec-energy').value,time:document.getElementById('rec-time').value,freq:document.getElementById('rec-freq').value};
+  recurring.push(r); saveRec(); injectRecurring();
+  document.getElementById('rec-name').value='';
+  renderRecurring();
+}
+function delRec(id){ recurring=recurring.filter(r=>r.id!==id); saveRec(); renderRecurring(); }
+
+function renderAll(){
+  const grouped={};
+  tasks.forEach(t=>{ if(!grouped[t.date]) grouped[t.date]=[]; grouped[t.date].push(t); });
+  const dates = Object.keys(grouped).sort((a,b)=>b.localeCompare(a));
+  const el = document.getElementById('all-list');
+  if(!dates.length){ el.innerHTML='<div class="empty"><div class="empty-icon">○</div>Geen taken.</div>'; return; }
+  el.innerHTML = dates.map(d => {
+    const label = d===today()?'Vandaag':new Date(d+'T12:00').toLocaleDateString('nl-NL',{weekday:'long',day:'numeric',month:'long'});
+    return '<div class="sec-head" style="margin-top:18px"><div class="sec-title">'+label+'</div><div class="sec-badge">'+grouped[d].length+'</div></div>'+grouped[d].map(t=>taskHTML(t)).join('');
+  }).join('');
+}
+
+function toggle(id){ const t=tasks.find(x=>x.id===id); if(t){t.done=!t.done;save();renderCurrent();} }
+function del(id){ tasks=tasks.filter(x=>x.id!==id); save(); renderCurrent(); }
+function addTask(){
+  const name=document.getElementById('new-task').value.trim();
+  if(!name) return;
+  tasks.push({id:nextId++,name,energy:document.getElementById('new-energy').value,time:document.getElementById('new-time').value,done:false,date:today(),source:''});
+  document.getElementById('new-task').value='';
+  save(); renderCurrent();
+}
+function renderCurrent(){ if(currentTab==='today') renderToday(); else if(currentTab==='all') renderAll(); }
+
+// ── GMAIL ──────────────────────────────────────────────────────
+function handleGmail(){
+  const clientId = localStorage.getItem(SK_CLIENT);
+  if(!clientId){ openSetupModal(); return; }
+  const token = localStorage.getItem(SK_TOKEN);
+  if(!token){ doGmailAuth(clientId); return; }
+  scanGmail(token);
+}
+function openSetupModal(){
+  document.getElementById('origin-block').textContent = window.location.origin||'file://';
+  document.getElementById('modal').style.display='flex';
+}
+function closeModal(){ document.getElementById('modal').style.display='none'; }
+function closeModalOutside(e){ if(e.target.id==='modal') closeModal(); }
+function copyOrigin(){
+  const txt = document.getElementById('origin-block').textContent;
+  navigator.clipboard.writeText(txt).catch(()=>{});
+}
+function saveClientId(){
+  const val = document.getElementById('client-id-input').value.trim();
+  if(!val||!val.includes('.apps.googleusercontent.com')){ alert('Vul een geldig Client ID in (eindigt op .apps.googleusercontent.com)'); return; }
+  localStorage.setItem(SK_CLIENT, val);
+  closeModal();
+  doGmailAuth(val);
+}
+function doGmailAuth(clientId){
+  const scope = encodeURIComponent('https://www.googleapis.com/auth/gmail.readonly');
+  const redirect = encodeURIComponent(window.location.href.split('?')[0].split('#')[0]);
+  const url = 'https://accounts.google.com/o/oauth2/v2/auth?client_id='+clientId+'&redirect_uri='+redirect+'&response_type=token&scope='+scope;
+  window.location.href = url;
+}
+function checkOAuthReturn(){
+  const hash = window.location.hash;
+  if(!hash.includes('access_token')) return;
+  const params = new URLSearchParams(hash.replace('#',''));
+  const token = params.get('access_token');
+  if(token){ localStorage.setItem(SK_TOKEN, token); window.history.replaceState({},'',window.location.pathname); scanGmail(token); }
+}
+async function scanGmail(token){
+  const gl=document.getElementById('gmail-label'), gb=document.getElementById('gmail-btn');
+  gl.textContent='Scannen…'; gb.style.pointerEvents='none';
+  try{
+    const q = encodeURIComponent('is:unread -category:promotions -category:social');
+    const res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=20&q='+q,{headers:{Authorization:'Bearer '+token}});
+    if(res.status===401){ localStorage.removeItem(SK_TOKEN); gl.textContent='Sessie verlopen — klik om opnieuw in te loggen'; gb.style.pointerEvents=''; gb.className='gmail-btn'; renderToday(); return; }
+    const data = await res.json();
+    const msgs = data.messages||[];
+    let added=0;
+    for(const m of msgs.slice(0,15)){
+      const mRes = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/'+m.id+'?format=metadata&metadataHeaders=Subject&metadataHeaders=From',{headers:{Authorization:'Bearer '+token}});
+      const mData = await mRes.json();
+      const headers = mData.payload?.headers||[];
+      const subject = headers.find(h=>h.name==='Subject')?.value||'(geen onderwerp)';
+      const from = headers.find(h=>h.name==='From')?.value||'';
+      const fromName = from.replace(/<[^>]+>/,'').replace(/"/g,'').trim()||from;
+      const name = 'Reageer: '+subject.slice(0,50)+(fromName?' ('+fromName.slice(0,20)+')':'');
+      if(!tasks.find(t=>t.gmail_id===m.id)){ tasks.push({id:nextId++,name,energy:'laag',time:'5 min',done:false,date:today(),source:'gmail',gmail_id:m.id}); added++; }
+    }
+    save();
+    gb.className='gmail-btn connected';
+    gl.textContent = added>0 ? added+' nieuwe actiepunten toegevoegd' : 'Geen nieuwe ongelezen mails';
+    gb.style.pointerEvents='';
+    renderToday();
+  }catch(e){ gl.textContent='Fout bij ophalen — probeer opnieuw'; gb.style.pointerEvents=''; }
+}
+
+// ── BOOT ───────────────────────────────────────────────────────
+function setHeader(){
+  const h=new Date().getHours();
+  document.getElementById('greeting').textContent = h<12?'Goedemorgen':h<18?'Goedemiddag':'Goedenavond';
+  const d=new Date();
+  const days=['zondag','maandag','dinsdag','woensdag','donderdag','vrijdag','zaterdag'];
+  const months=['januari','februari','maart','april','mei','juni','juli','augustus','september','oktober','november','december'];
+  document.getElementById('date-str').textContent = days[d.getDay()]+' '+d.getDate()+' '+months[d.getMonth()];
+}
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+document.getElementById('new-task').addEventListener('keydown',e=>{ if(e.key==='Enter') addTask(); });
+
+load(); setHeader(); checkOAuthReturn(); renderToday();
+</script>
+</body>
+</html>
