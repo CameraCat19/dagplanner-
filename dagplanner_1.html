@@ -1,0 +1,1310 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Dagplanner">
+<title>Dagplanner</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --hoog:#5B4FCF;--hoog-bg:#F0EFFE;--hoog-border:#C4BFEE;
+  --mid:#B06A10;--mid-bg:#FEF6E7;--mid-border:#F0C97A;
+  --laag:#1A7A5E;--laag-bg:#E8F8F3;--laag-border:#7ED4BC;
+  --bg:#FAF9F7;--surface:#FFFFFF;--surface2:#F4F2EF;
+  --text:#1C1B19;--muted:#807D78;--faint:#C8C5BF;
+  --border:rgba(0,0,0,0.09);--border2:rgba(0,0,0,0.15);
+  --r:14px;--r-sm:9px;
+  --sol:#E05A2B;--sol-bg:#FEF0EA;
+}
+@media(prefers-color-scheme:dark){:root{
+  --hoog:#9E95F0;--hoog-bg:#1E1B38;--hoog-border:#3D3570;
+  --mid:#F0B84A;--mid-bg:#261C07;--mid-border:#5C3E0E;
+  --laag:#3EC9A7;--laag-bg:#0A231E;--laag-border:#1A5C4A;
+  --bg:#111110;--surface:#1C1B19;--surface2:#252420;
+  --text:#EEEBe6;--muted:#888480;--faint:#3A3835;
+  --border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.14);
+  --sol:#F07A50;--sol-bg:#2A1508;
+}}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;max-width:480px;margin:0 auto;font-size:15px}
+
+.nav{display:flex;background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:20;overflow-x:auto}
+.nav::-webkit-scrollbar{display:none}
+.nav-tab{flex:0 0 auto;padding:14px 12px 12px;border:none;background:transparent;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;color:var(--muted);cursor:pointer;letter-spacing:0.04em;border-bottom:2px solid transparent;transition:all 0.15s;white-space:nowrap}
+.nav-tab.active{color:var(--text);border-bottom-color:var(--text)}
+
+.header{padding:24px 20px 16px}
+.greeting{font-family:'DM Serif Display',serif;font-size:26px;line-height:1.2}
+.subline{font-size:12px;color:var(--muted);margin-top:3px;font-weight:300}
+.progress-wrap{margin-top:14px;display:flex;align-items:center;gap:10px}
+.progress-bar{flex:1;height:3px;background:var(--faint);border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;background:var(--laag);border-radius:2px;transition:width 0.5s ease}
+.progress-label{font-size:12px;color:var(--muted);white-space:nowrap}
+
+.energy-strip{display:flex;gap:6px;padding:0 20px 16px}
+.etab{flex:1;padding:8px 4px;border:1px solid var(--border2);border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;background:transparent;color:var(--muted);transition:all 0.15s;font-family:'DM Sans',sans-serif;text-align:center}
+.etab.act-hoog{background:var(--hoog-bg);color:var(--hoog);border-color:var(--hoog-border)}
+.etab.act-mid{background:var(--mid-bg);color:var(--mid);border-color:var(--mid-border)}
+.etab.act-laag{background:var(--laag-bg);color:var(--laag);border-color:var(--laag-border)}
+.energy-hint{font-size:12px;color:var(--muted);font-style:italic;padding:0 20px 14px;min-height:16px}
+
+.section{padding:0 20px 140px}
+.sec-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;margin-top:4px}
+.sec-title{font-size:11px;font-weight:500;letter-spacing:0.07em;text-transform:uppercase;color:var(--muted)}
+.sec-badge{font-size:11px;color:var(--muted);background:var(--surface2);border-radius:8px;padding:2px 8px}
+
+.gmail-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:11px;border:1px dashed var(--border2);border-radius:var(--r);background:transparent;color:var(--muted);font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;margin-bottom:14px;transition:all 0.15s}
+.gmail-btn:hover{border-color:#D44638;color:#D44638}
+.gmail-btn.connected{border-style:solid;border-color:var(--laag-border);color:var(--laag);background:var(--laag-bg)}
+.gmail-dot{width:8px;height:8px;border-radius:50%;background:currentColor;flex-shrink:0}
+
+/* TASK CARD */
+.task{display:flex;align-items:flex-start;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:13px 14px;margin-bottom:7px;position:relative;overflow:hidden}
+.task::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px}
+.task.e-hoog::before{background:var(--hoog)}
+.task.e-mid::before{background:var(--mid)}
+.task.e-laag::before{background:var(--laag)}
+.task.done{opacity:0.38}
+.task.overdue{border-color:rgba(200,50,30,0.25)}
+.check{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--faint);background:transparent;cursor:pointer;flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;transition:all 0.15s}
+.task.done .check{background:var(--laag);border-color:var(--laag)}
+.task-body{flex:1;min-width:0}
+.task-name{font-size:14px;line-height:1.4;color:var(--text)}
+.task.done .task-name{text-decoration:line-through}
+.task-link{font-size:12px;color:var(--hoog);text-decoration:none;display:block;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.task-link:hover{text-decoration:underline}
+.task-note{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.5;white-space:pre-wrap;word-break:break-word}
+.task-meta{display:flex;gap:5px;margin-top:5px;flex-wrap:wrap}
+.pill{font-size:11px;padding:2px 8px;border-radius:7px;font-weight:500;white-space:nowrap}
+.pill-hoog{background:var(--hoog-bg);color:var(--hoog)}
+.pill-mid{background:var(--mid-bg);color:var(--mid)}
+.pill-laag{background:var(--laag-bg);color:var(--laag)}
+.pill-t{background:var(--surface2);color:var(--muted);font-weight:400}
+.pill-gmail{background:#fdecea;color:#b03020;font-weight:400}
+.pill-deadline{background:#fdecea;color:#b03020;font-weight:500}
+.pill-date{background:var(--surface2);color:var(--muted);font-weight:400}
+.pill-sol{background:var(--sol-bg);color:var(--sol);font-weight:500}
+.pill-rec{background:var(--surface2);color:var(--muted);font-weight:400}
+@media(prefers-color-scheme:dark){.pill-gmail,.pill-deadline{background:#2a1210;color:#f08070}}
+.del-btn{background:none;border:none;cursor:pointer;color:var(--faint);font-size:18px;padding:0 2px;line-height:1;flex-shrink:0;transition:color 0.15s}
+.del-btn:hover{color:var(--muted)}
+.empty{text-align:center;padding:36px 16px;color:var(--muted);font-size:13px;line-height:1.8}
+.empty-icon{font-size:28px;margin-bottom:8px}
+
+/* ADD FORM */
+.fab{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;padding:12px 20px 28px;background:var(--bg);border-top:1px solid var(--border)}
+.add-input{width:100%;padding:10px 14px;border:1px solid var(--border2);border-radius:var(--r-sm);background:var(--surface);color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;margin-bottom:7px}
+.add-input:focus{border-color:var(--hoog)}
+.add-input::placeholder{color:var(--faint)}
+.add-row{display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap}
+.sel{flex:1;min-width:80px;padding:8px 8px;border:1px solid var(--border2);border-radius:var(--r-sm);background:var(--surface);color:var(--text);font-size:12px;font-family:'DM Sans',sans-serif;outline:none;appearance:none;cursor:pointer}
+.date-input{flex:1;min-width:110px;padding:8px 8px;border:1px solid var(--border2);border-radius:var(--r-sm);background:var(--surface);color:var(--text);font-size:12px;font-family:'DM Sans',sans-serif;outline:none}
+.add-row-2{display:flex;gap:6px;margin-bottom:7px}
+.link-input{flex:1;padding:8px 10px;border:1px solid var(--border2);border-radius:var(--r-sm);background:var(--surface);color:var(--text);font-size:12px;font-family:'DM Sans',sans-serif;outline:none}
+.link-input::placeholder{color:var(--faint)}
+.add-btn{width:100%;padding:10px;border:none;border-radius:var(--r-sm);background:var(--text);color:var(--bg);font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;transition:opacity 0.15s}
+.add-btn:active{opacity:0.7}
+
+/* WEEK */
+.week-section{padding:0 20px 40px}
+.week-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:10px}
+.week-card-title{font-size:13px;font-weight:500;margin-bottom:10px;color:var(--text)}
+.week-stat{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px}
+.week-stat:last-child{border-bottom:none}
+.week-stat-label{color:var(--muted)}
+.week-stat-val{font-weight:500}
+.week-done-list{list-style:none;font-size:13px;color:var(--muted);line-height:2}
+.week-done-list li::before{content:'✓  ';color:var(--laag)}
+.week-done-list li.open::before{content:'○  ';color:var(--faint)}
+
+/* RECURRING */
+.rec-section{padding:0 20px 120px}
+.rec-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:13px 14px;margin-bottom:7px;display:flex;align-items:center;gap:10px}
+.rec-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.rec-dot.e-hoog{background:var(--hoog)}.rec-dot.e-mid{background:var(--mid)}.rec-dot.e-laag{background:var(--laag)}
+.rec-body{flex:1;min-width:0}
+.rec-name{font-size:14px;color:var(--text)}
+.rec-meta{font-size:11px;color:var(--muted);margin-top:3px}
+.rec-del{background:none;border:none;cursor:pointer;color:var(--faint);font-size:18px;line-height:1;transition:color 0.15s}
+.add-rec-form{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-top:14px}
+.add-rec-title{font-size:12px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px}
+.rec-input{width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:var(--r-sm);background:var(--bg);color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;margin-bottom:8px}
+.rec-input:focus{border-color:var(--hoog)}
+.rec-row{display:flex;gap:7px;flex-wrap:wrap}
+.rec-sel{flex:1;min-width:90px;padding:8px 10px;border:1px solid var(--border2);border-radius:var(--r-sm);background:var(--bg);color:var(--text);font-size:12px;font-family:'DM Sans',sans-serif;outline:none;appearance:none}
+.rec-add-btn{padding:8px 14px;border:none;border-radius:var(--r-sm);background:var(--text);color:var(--bg);font-size:12px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap}
+
+/* PROJECTS */
+.proj-section{padding:0 20px 40px}
+.proj-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);margin-bottom:10px;overflow:hidden}
+.proj-header{padding:14px 16px;display:flex;align-items:center;gap:10px;cursor:pointer}
+.proj-name{flex:1;font-size:14px;font-weight:500;color:var(--text)}
+.proj-count{font-size:11px;color:var(--muted);background:var(--surface2);border-radius:8px;padding:2px 8px}
+.proj-toggle{font-size:14px;color:var(--muted);transition:transform 0.2s}
+.proj-body{border-top:1px solid var(--border);display:none}
+
+.phase-block{border-bottom:1px solid var(--border)}
+.phase-block:last-child{border-bottom:none}
+.phase-header{display:flex;align-items:center;gap:8px;padding:10px 14px;cursor:pointer;background:var(--surface2)}
+.phase-label{flex:1;font-size:12px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em}
+.phase-count{font-size:11px;color:var(--faint)}
+.phase-toggle{font-size:12px;color:var(--faint);transition:transform 0.15s}
+.phase-tasks{padding:8px 14px}
+
+.subtask{display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px}
+.subtask:last-child{border-bottom:none}
+.sub-check{width:18px;height:18px;border-radius:50%;border:1.5px solid var(--faint);background:transparent;cursor:pointer;flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;transition:all 0.15s}
+.subtask.done .sub-check{background:var(--laag);border-color:var(--laag)}
+.subtask.done .sub-name{text-decoration:line-through;color:var(--muted)}
+.sub-body{flex:1;min-width:0}
+.sub-name{color:var(--text);line-height:1.4}
+.sub-meta{font-size:11px;color:var(--muted);margin-top:2px;display:flex;gap:6px;flex-wrap:wrap}
+.sub-date-pill{background:var(--hoog-bg);color:var(--hoog);padding:1px 6px;border-radius:5px;font-size:11px}
+.sub-date-pill.today{background:var(--laag-bg);color:var(--laag)}
+.sub-date-pill.past{background:#fdecea;color:#b03020}
+.sub-actions{display:flex;gap:2px;flex-shrink:0}
+.sub-del{background:none;border:none;cursor:pointer;color:var(--faint);font-size:16px;line-height:1;padding:0 2px}
+.sub-send{background:none;border:none;cursor:pointer;color:var(--faint);font-size:12px;line-height:1;padding:2px 4px;border-radius:4px;white-space:nowrap}
+.sub-send:hover{background:var(--laag-bg);color:var(--laag)}
+.sub-edit-btn{background:none;border:none;cursor:pointer;color:var(--faint);font-size:13px;line-height:1;padding:2px 3px}
+.sub-edit-btn:hover{color:var(--muted)}
+.sub-split-btn{background:none;border:none;cursor:pointer;color:var(--faint);font-size:13px;line-height:1;padding:2px 3px}
+.sub-split-btn:hover{color:var(--hoog)}
+.sub-split-result{margin-top:6px}
+.sub-split-loading{font-size:11px;color:var(--muted);font-style:italic}
+.split-preview{background:var(--hoog-bg);border:1px solid var(--hoog-border);border-radius:var(--r-sm);padding:8px 10px;margin-top:4px}
+.split-preview-title{font-size:11px;font-weight:500;color:var(--hoog);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em}
+.split-preview-item{display:flex;align-items:center;gap:6px;padding:4px 0;font-size:12px;color:var(--text);border-bottom:1px solid var(--hoog-border)}
+.split-preview-item:last-of-type{border-bottom:none}
+.split-preview-item input[type=checkbox]{width:14px;height:14px;cursor:pointer;flex-shrink:0}
+.split-confirm-row{display:flex;gap:6px;margin-top:8px}
+.split-confirm-btn{flex:1;padding:6px;border:none;border-radius:var(--r-sm);background:var(--hoog);color:white;font-size:12px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif}
+.split-cancel-btn{flex:1;padding:6px;border:1px solid var(--hoog-border);border-radius:var(--r-sm);background:transparent;color:var(--hoog);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif}
+
+/* SUB EDIT MODAL */
+.sub-edit-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:300;display:flex;align-items:flex-end;justify-content:center}
+.sub-edit-modal{background:var(--surface);border-radius:20px 20px 0 0;padding:22px 20px 36px;width:100%;max-width:480px}
+.sub-edit-modal h3{font-family:'DM Serif Display',serif;font-size:19px;margin-bottom:14px}
+.sub-edit-field{margin-bottom:10px}
+.sub-edit-label{font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px}
+.sub-edit-input{width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:var(--r-sm);background:var(--bg);color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none}
+.sub-edit-input:focus{border-color:var(--hoog)}
+.sub-edit-btns{display:flex;gap:8px;margin-top:14px}
+.sub-edit-save{flex:1;padding:10px;border:none;border-radius:var(--r-sm);background:var(--text);color:var(--bg);font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif}
+.sub-edit-cancel{flex:1;padding:10px;border:1px solid var(--border2);border-radius:var(--r-sm);background:transparent;color:var(--muted);font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif}
+
+.phase-add-sub{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.phase-add-sub input{flex:2;min-width:100px;padding:7px 10px;border:1px solid var(--border2);border-radius:var(--r-sm);background:var(--bg);color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none}
+.phase-add-sub input[type=date]{flex:1;min-width:110px}
+.phase-add-sub button{padding:7px 10px;border:none;border-radius:var(--r-sm);background:var(--text);color:var(--bg);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap}
+
+.proj-footer{padding:10px 14px;display:flex;gap:7px;border-top:1px solid var(--border)}
+.proj-footer button{flex:1;padding:7px;border:1px solid var(--border2);border-radius:var(--r-sm);background:transparent;color:var(--muted);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.15s}
+.proj-footer button:hover{border-color:var(--hoog);color:var(--hoog)}
+.proj-footer .del-proj-btn:hover{border-color:#c04040;color:#c04040}
+
+.add-phase-row{display:flex;gap:7px;padding:8px 14px;border-top:1px solid var(--border);background:var(--surface2)}
+.add-phase-row input{flex:1;padding:7px 10px;border:1px solid var(--border2);border-radius:var(--r-sm);background:var(--bg);color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none}
+.add-phase-row button{padding:7px 12px;border:none;border-radius:var(--r-sm);background:var(--text);color:var(--bg);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap}
+
+.add-proj-form{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-top:14px}
+.add-proj-title{font-size:12px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px}
+.proj-input{width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:var(--r-sm);background:var(--bg);color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;margin-bottom:8px}
+.proj-input:focus{border-color:var(--hoog)}
+.proj-btn-row{display:flex;gap:7px}
+.proj-ai-btn{flex:1;padding:9px;border:1px solid var(--hoog-border);border-radius:var(--r-sm);background:var(--hoog-bg);color:var(--hoog);font-size:12px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif}
+.proj-add-btn{flex:1;padding:9px;border:none;border-radius:var(--r-sm);background:var(--text);color:var(--bg);font-size:12px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif}
+.ai-loading{font-size:12px;color:var(--muted);font-style:italic;margin-top:8px;min-height:18px}
+
+/* SOLLICITATIES */
+.sol-section{padding:0 20px 120px}
+.sol-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:8px}
+.sol-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.sol-company{font-size:15px;font-weight:500;color:var(--text)}
+.sol-role{font-size:13px;color:var(--muted);margin-top:2px}
+.sol-status-pill{font-size:11px;padding:3px 10px;border-radius:8px;font-weight:500;white-space:nowrap;cursor:pointer;border:none;font-family:'DM Sans',sans-serif}
+.s-gestuurd{background:#EEF3FF;color:#3450A4}
+.s-gesprek{background:var(--mid-bg);color:var(--mid)}
+.s-test{background:var(--hoog-bg);color:var(--hoog)}
+.s-afgewezen{background:var(--surface2);color:var(--muted)}
+.s-aangenomen{background:var(--laag-bg);color:var(--laag)}
+@media(prefers-color-scheme:dark){.s-gestuurd{background:#1A2240;color:#7A9AEE}}
+.sol-meta{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;align-items:center}
+.sol-link{font-size:12px;color:var(--hoog);text-decoration:none}
+.sol-link:hover{text-decoration:underline}
+.sol-date{font-size:11px;color:var(--muted)}
+.sol-del{background:none;border:none;cursor:pointer;color:var(--faint);font-size:16px;line-height:1;margin-left:auto}
+.add-sol-form{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-top:14px}
+.add-sol-title{font-size:12px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px}
+.sol-input{width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:var(--r-sm);background:var(--bg);color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;margin-bottom:7px}
+.sol-input:focus{border-color:var(--sol)}
+.sol-row{display:flex;gap:7px;margin-bottom:7px;flex-wrap:wrap}
+.sol-sel{flex:1;min-width:100px;padding:8px 10px;border:1px solid var(--border2);border-radius:var(--r-sm);background:var(--bg);color:var(--text);font-size:12px;font-family:'DM Sans',sans-serif;outline:none;appearance:none}
+.sol-add-btn{width:100%;padding:9px;border:none;border-radius:var(--r-sm);background:var(--text);color:var(--bg);font-size:12px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:100;display:flex;align-items:flex-end;justify-content:center}
+.modal{background:var(--surface);border-radius:20px 20px 0 0;padding:28px 24px 40px;width:100%;max-width:480px;max-height:85vh;overflow-y:auto}
+.modal h2{font-family:'DM Serif Display',serif;font-size:22px;margin-bottom:8px}
+.modal p{font-size:13px;color:var(--muted);line-height:1.7;margin-bottom:12px}
+.modal-input{width:100%;padding:11px 14px;border:1px solid var(--border2);border-radius:var(--r-sm);background:var(--bg);color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;margin-bottom:10px}
+.modal-input:focus{border-color:var(--hoog)}
+.modal-btn{width:100%;padding:12px;border:none;border-radius:var(--r-sm);background:var(--text);color:var(--bg);font-size:14px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;margin-bottom:8px}
+.modal-cancel{width:100%;padding:10px;border:1px solid var(--border2);border-radius:var(--r-sm);background:transparent;color:var(--muted);font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif}
+.code-block{background:var(--surface2);border-radius:var(--r-sm);padding:10px 12px;font-family:monospace;font-size:12px;color:var(--text);word-break:break-all;margin-bottom:14px;border:1px solid var(--border);user-select:all;cursor:copy}
+.mlink{color:var(--hoog);text-decoration:underline;cursor:pointer}
+.modal-step{display:flex;gap:10px;margin-bottom:8px;font-size:13px;color:var(--muted);line-height:1.6}
+.modal-step-num{width:22px;height:22px;border-radius:50%;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;color:var(--text);flex-shrink:0;margin-top:1px}
+
+/* API KEY NOTICE */
+.api-notice{background:var(--hoog-bg);border:1px solid var(--hoog-border);border-radius:var(--r-sm);padding:10px 12px;font-size:12px;color:var(--hoog);margin-bottom:12px;line-height:1.6}
+.api-notice a{color:var(--hoog);font-weight:500}
+
+/* WEEK DAY ROWS */
+.week-day{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);margin-bottom:8px;overflow:hidden}
+.week-day-header{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border)}
+.week-day-label{font-size:13px;font-weight:500;color:var(--text)}
+.week-day-count{font-size:11px;color:var(--muted);background:var(--surface2);border-radius:8px;padding:2px 8px}
+.week-day-tasks{padding:8px 14px}
+.week-task-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px}
+.week-task-row:last-child{border-bottom:none}
+.week-task-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.week-task-name{flex:1;color:var(--text)}
+.week-task-name.done{text-decoration:line-through;color:var(--muted)}
+.week-task-meta{font-size:11px;color:var(--muted);white-space:nowrap}
+
+/* EDIT MODAL */
+.edit-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;display:flex;align-items:flex-end;justify-content:center}
+.edit-modal{background:var(--surface);border-radius:20px 20px 0 0;padding:24px 20px 36px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto}
+.edit-modal h3{font-family:'DM Serif Display',serif;font-size:20px;margin-bottom:16px}
+.edit-field{margin-bottom:10px}
+.edit-label{font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px}
+.edit-input{width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:var(--r-sm);background:var(--bg);color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none}
+.edit-input:focus{border-color:var(--hoog)}
+.edit-row{display:flex;gap:7px}
+.edit-row .edit-input{flex:1}
+.edit-sel{width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:var(--r-sm);background:var(--bg);color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;appearance:none}
+.edit-btn-row{display:flex;gap:8px;margin-top:14px}
+.edit-save-btn{flex:1;padding:11px;border:none;border-radius:var(--r-sm);background:var(--text);color:var(--bg);font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif}
+.edit-cancel-btn{flex:1;padding:11px;border:1px solid var(--border2);border-radius:var(--r-sm);background:transparent;color:var(--muted);font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif}
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <button class="nav-tab active" data-tab="today" onclick="switchTab('today')">Vandaag</button>
+  <button class="nav-tab" data-tab="week" onclick="switchTab('week')">Week</button>
+  <button class="nav-tab" data-tab="recurring" onclick="switchTab('recurring')">Terugkerend</button>
+  <button class="nav-tab" data-tab="projects" onclick="switchTab('projects')">Projecten</button>
+  <button class="nav-tab" data-tab="sollicitaties" onclick="switchTab('sollicitaties')">Sollicitaties</button>
+  <button class="nav-tab" data-tab="all" onclick="switchTab('all')">Alles</button>
+</div>
+
+<!-- TODAY -->
+<div id="tab-today">
+  <div class="header">
+    <div class="greeting" id="greeting">Goedemorgen</div>
+    <div class="subline" id="date-str"></div>
+    <div class="progress-wrap">
+      <div class="progress-bar"><div class="progress-fill" id="prog" style="width:0%"></div></div>
+      <div class="progress-label" id="prog-label">0 van 0</div>
+    </div>
+  </div>
+  <div class="energy-strip">
+    <button class="etab" id="et-hoog" onclick="toggleEnergy('hoog')">⚡ Scherp</button>
+    <button class="etab" id="et-mid"  onclick="toggleEnergy('mid')">☁️ Gewoon</button>
+    <button class="etab" id="et-laag" onclick="toggleEnergy('laag')">🌿 Moe</button>
+  </div>
+  <div class="energy-hint" id="ehint"></div>
+  <div class="section">
+    <div class="sec-head">
+      <div class="sec-title">Taken vandaag</div>
+      <div class="sec-badge" id="today-count">0</div>
+    </div>
+    <button class="gmail-btn" id="gmail-btn" onclick="handleGmail()">
+      <span class="gmail-dot"></span>
+      <span id="gmail-label">Gmail koppelen voor actiepunten</span>
+    </button>
+    <div id="today-list"></div>
+  </div>
+</div>
+
+<!-- WEEK -->
+<div id="tab-week" style="display:none">
+  <div class="header">
+    <div class="greeting">Weekoverzicht</div>
+    <div class="subline" id="week-range"></div>
+  </div>
+  <div class="week-section" id="week-content"></div>
+</div>
+
+<!-- RECURRING -->
+<div id="tab-recurring" style="display:none">
+  <div class="header">
+    <div class="greeting">Terugkerende taken</div>
+    <div class="subline">Worden automatisch toegevoegd op de juiste dag</div>
+  </div>
+  <div class="rec-section">
+    <div id="rec-list"></div>
+    <div class="add-rec-form">
+      <div class="add-rec-title">Nieuwe terugkerende taak</div>
+      <input class="rec-input" id="rec-name" placeholder="Taaknaam…" />
+      <div class="rec-row">
+        <select class="rec-sel" id="rec-energy">
+          <option value="hoog">⚡ Scherp</option>
+          <option value="mid" selected>☁️ Gewoon</option>
+          <option value="laag">🌿 Moe</option>
+        </select>
+        <select class="rec-sel" id="rec-time">
+          <option value="5 min">5 min</option>
+          <option value="15 min" selected>15 min</option>
+          <option value="30 min">30 min</option>
+          <option value="1 uur">1 uur</option>
+          <option value="2 uur">2 uur</option>
+        </select>
+        <select class="rec-sel" id="rec-freq">
+          <option value="daily">Dagelijks</option>
+          <option value="mon">Maandag</option>
+          <option value="tue">Dinsdag</option>
+          <option value="wed">Woensdag</option>
+          <option value="thu">Donderdag</option>
+          <option value="fri">Vrijdag</option>
+          <option value="weekly">Wekelijks</option>
+          <option value="monthly">Maandelijks</option>
+          <option value="quarterly">Per kwartaal</option>
+          <option value="yearly">Jaarlijks</option>
+        </select>
+        <button class="rec-add-btn" onclick="addRecurring()">+ Voeg toe</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PROJECTS -->
+<div id="tab-projects" style="display:none">
+  <div class="header">
+    <div class="greeting">Projecten</div>
+    <div class="subline">Grote taken opgesplitst in kleine stappen</div>
+  </div>
+  <div class="proj-section">
+    <div id="proj-list"></div>
+    <div class="add-proj-form">
+      <div class="add-proj-title">Nieuw project</div>
+      <input class="proj-input" id="proj-name" placeholder="Projectnaam (bijv. 'Website vernieuwen')…" />
+      <div class="api-notice" id="api-notice" style="display:none">
+        Voor AI-suggesties heb je een Anthropic API-sleutel nodig.
+        Haal er gratis een op via <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> en vul hem in via de AI-knop.
+      </div>
+      <div class="proj-btn-row">
+        <button class="proj-ai-btn" onclick="aiSplitProject()">✦ AI splitsen</button>
+        <button class="proj-add-btn" onclick="addProject()">+ Leeg project</button>
+      </div>
+      <div class="ai-loading" id="ai-loading"></div>
+    </div>
+  </div>
+</div>
+
+<!-- SOLLICITATIES -->
+<div id="tab-sollicitaties" style="display:none">
+  <div class="header">
+    <div class="greeting">Sollicitaties</div>
+    <div class="subline" id="sol-subline">0 actief</div>
+  </div>
+  <div class="sol-section">
+    <div id="sol-list"></div>
+    <div class="add-sol-form">
+      <div class="add-sol-title">Nieuwe sollicitatie</div>
+      <input class="sol-input" id="sol-company" placeholder="Bedrijfsnaam" />
+      <input class="sol-input" id="sol-role" placeholder="Functie / rol" />
+      <input class="sol-input" id="sol-link" placeholder="Link naar vacature (optioneel)" />
+      <div class="sol-row">
+        <select class="sol-sel" id="sol-status">
+          <option value="gestuurd">Gestuurd</option>
+          <option value="gesprek">Gesprek gepland</option>
+          <option value="test">Opdracht / test</option>
+          <option value="afgewezen">Afgewezen</option>
+          <option value="aangenomen">Aangenomen 🎉</option>
+        </select>
+        <input class="date-input sol-sel" type="date" id="sol-date" />
+      </div>
+      <div class="sol-row" style="margin-bottom:7px">
+        <div style="flex:1">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Deadline sollicitatie (optioneel)</div>
+          <input class="date-input" type="date" id="sol-deadline" style="width:100%" />
+        </div>
+        <div style="flex:1;display:flex;align-items:flex-end">
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer;padding-bottom:2px">
+            <input type="checkbox" id="sol-as-task" style="width:15px;height:15px;cursor:pointer" />
+            Voeg toe als taak
+          </label>
+        </div>
+      </div>
+      <button class="sol-add-btn" onclick="addSollicitatie()">+ Voeg toe</button>
+    </div>
+  </div>
+</div>
+
+<!-- ALL -->
+<div id="tab-all" style="display:none">
+  <div class="header">
+    <div class="greeting">Alle taken</div>
+    <div class="subline">Inclusief afgeronde taken</div>
+  </div>
+  <div class="section" id="all-list" style="padding-bottom:40px"></div>
+</div>
+
+<!-- FAB -->
+<div class="fab" id="fab">
+  <input class="add-input" id="new-task" placeholder="Nieuwe taak toevoegen…" />
+  <div class="add-row">
+    <select class="sel" id="new-energy">
+      <option value="hoog">⚡ Scherp</option>
+      <option value="mid" selected>☁️ Gewoon</option>
+      <option value="laag">🌿 Moe</option>
+    </select>
+    <select class="sel" id="new-time">
+      <option value="5 min">5 min</option>
+      <option value="15 min" selected>15 min</option>
+      <option value="30 min">30 min</option>
+      <option value="1 uur">1 uur</option>
+      <option value="2+ uur">2+ uur</option>
+    </select>
+  </div>
+  <div class="add-row">
+    <input class="date-input" type="date" id="new-execdate" title="Uitvoerdatum" style="flex:1" />
+    <input class="date-input" type="date" id="new-deadline" title="Deadline" style="flex:1" />
+    <input class="link-input" id="new-link" placeholder="Link (optioneel)" style="flex:2" />
+  </div>
+  <button class="add-btn" onclick="addTask()">+ Voeg toe</button>
+</div>
+
+<!-- GMAIL MODAL -->
+<div class="modal-overlay" id="modal" style="display:none" onclick="closeModalOutside(event)">
+  <div class="modal">
+    <h2>Gmail koppelen</h2>
+    <p>Eenmalige setup via Google Cloud. Je geeft de app alleen <strong>leestoegang</strong> — er wordt niets verstuurd of gewijzigd.</p>
+    <div class="modal-step"><div class="modal-step-num">1</div><div>Ga naar <span class="mlink" onclick="window.open('https://console.cloud.google.com','_blank')">console.cloud.google.com</span> en maak een project aan (bijv. "Dagplanner")</div></div>
+    <div class="modal-step"><div class="modal-step-num">2</div><div>Ga naar <strong>APIs &amp; Services → Library</strong>, zoek "Gmail API" en zet hem aan</div></div>
+    <div class="modal-step"><div class="modal-step-num">3</div><div>Ga naar <strong>OAuth consent screen</strong> → External → vul naam + e-mail in → sla op</div></div>
+    <div class="modal-step"><div class="modal-step-num">4</div><div>Ga naar <strong>Credentials → Create Credentials → OAuth 2.0 Client ID</strong> → kies <strong>Web application</strong></div></div>
+    <div class="modal-step"><div class="modal-step-num">5</div><div>Voeg bij <strong>Authorized JavaScript origins</strong> toe (klik om te kopiëren):</div></div>
+    <div class="code-block" id="origin-block" onclick="copyOrigin()"></div>
+    <div class="modal-step"><div class="modal-step-num">6</div><div>Kopieer je <strong>Client ID</strong> en plak het hieronder</div></div>
+    <input class="modal-input" id="client-id-input" placeholder="xxxxx.apps.googleusercontent.com" />
+    <button class="modal-btn" onclick="saveClientId()">Opslaan en inloggen bij Google</button>
+    <button class="modal-cancel" onclick="closeModal()">Annuleren</button>
+  </div>
+</div>
+
+<!-- AI KEY MODAL -->
+<div class="modal-overlay" id="ai-modal" style="display:none" onclick="closeAiModalOutside(event)">
+  <div class="modal">
+    <h2>Anthropic API-sleutel</h2>
+    <p>Voor het automatisch opsplitsen van projecten gebruik ik de Claude API. Je sleutel wordt alleen lokaal opgeslagen in je browser.</p>
+    <p>Haal gratis een sleutel op via <span class="mlink" onclick="window.open('https://console.anthropic.com','_blank')">console.anthropic.com</span> → API Keys → Create Key.</p>
+    <input class="modal-input" id="ai-key-input" type="password" placeholder="sk-ant-…" />
+    <button class="modal-btn" onclick="saveAiKey()">Opslaan</button>
+    <button class="modal-cancel" onclick="closeAiModal()">Annuleren</button>
+  </div>
+</div>
+
+<!-- SUB EDIT MODAL -->
+<div class="sub-edit-overlay" id="sub-edit-modal" style="display:none" onclick="closeSubEditOutside(event)">
+  <div class="sub-edit-modal">
+    <h3>Stap bewerken</h3>
+    <div class="sub-edit-field">
+      <div class="sub-edit-label">Naam</div>
+      <input class="sub-edit-input" id="se-name" />
+    </div>
+    <div class="sub-edit-field">
+      <div class="sub-edit-label">Datum (optioneel)</div>
+      <input class="sub-edit-input" type="date" id="se-date" />
+    </div>
+    <div class="sub-edit-btns">
+      <button class="sub-edit-cancel" onclick="closeSubEdit()">Annuleren</button>
+      <button class="sub-edit-save" onclick="saveSubEdit()">Opslaan</button>
+    </div>
+  </div>
+</div>
+
+
+<div class="edit-modal-overlay" id="edit-modal" style="display:none" onclick="closeEditOutside(event)">
+  <div class="edit-modal">
+    <h3>Taak bewerken</h3>
+    <div class="edit-field">
+      <div class="edit-label">Taaknaam</div>
+      <input class="edit-input" id="edit-name" />
+    </div>
+    <div class="edit-row">
+      <div class="edit-field" style="flex:1">
+        <div class="edit-label">Energie</div>
+        <select class="edit-sel edit-input" id="edit-energy">
+          <option value="hoog">⚡ Scherp</option>
+          <option value="mid">☁️ Gewoon</option>
+          <option value="laag">🌿 Moe</option>
+        </select>
+      </div>
+      <div class="edit-field" style="flex:1">
+        <div class="edit-label">Tijd</div>
+        <select class="edit-sel edit-input" id="edit-time">
+          <option value="5 min">5 min</option>
+          <option value="15 min">15 min</option>
+          <option value="30 min">30 min</option>
+          <option value="1 uur">1 uur</option>
+          <option value="2+ uur">2+ uur</option>
+        </select>
+      </div>
+    </div>
+    <div class="edit-row">
+      <div class="edit-field" style="flex:1">
+        <div class="edit-label">Uitvoerdatum</div>
+        <input class="edit-input" type="date" id="edit-execdate" />
+      </div>
+      <div class="edit-field" style="flex:1">
+        <div class="edit-label">Deadline</div>
+        <input class="edit-input" type="date" id="edit-deadline" />
+      </div>
+    </div>
+    <div class="edit-field">
+      <div class="edit-label">Link (optioneel)</div>
+      <input class="edit-input" id="edit-link" placeholder="https://…" />
+    </div>
+    <div class="edit-field">
+      <div class="edit-label">Notitie (optioneel)</div>
+      <textarea class="edit-input" id="edit-note" rows="3" placeholder="Aantekening, context, of extra info…" style="resize:vertical;line-height:1.5"></textarea>
+    </div>
+    <div class="edit-btn-row">
+      <button class="edit-cancel-btn" onclick="closeEdit()">Annuleren</button>
+      <button class="edit-save-btn" onclick="saveEdit()">Opslaan</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const SK_TASKS   = 'dp_tasks_v4';
+const SK_REC     = 'dp_rec_v2';
+const SK_CLIENT  = 'dp_gclient';
+const SK_TOKEN   = 'dp_gtoken';
+const SK_PROJ    = 'dp_proj_v1';
+const SK_SOL     = 'dp_sol_v1';
+const SK_AIKEY   = 'dp_aikey';
+
+let tasks=[], recurring=[], projects=[], sollicitaties=[];
+let activeEnergy=null, currentTab='today';
+let nextId=Date.now();
+
+const hints={hoog:'Je hebt focus — gebruik het voor werk dat ertoe doet.',mid:'Gewone modus: communicatie, kleine stappen, lichte taken.',laag:'Doe alleen wat haalbaar voelt. Moe zijn is geen falen.'};
+const eL={hoog:'Scherp',mid:'Gewoon',laag:'Moe'};
+const fL={daily:'Dagelijks',mon:'Maandag',tue:'Dinsdag',wed:'Woensdag',thu:'Donderdag',fri:'Vrijdag',weekly:'Wekelijks',monthly:'Maandelijks',quarterly:'Per kwartaal',yearly:'Jaarlijks'};
+const dayMap={mon:1,tue:2,wed:3,thu:4,fri:5};
+const statLabels={gestuurd:'Gestuurd',gesprek:'Gesprek',test:'Opdracht',afgewezen:'Afgewezen',aangenomen:'Aangenomen 🎉'};
+
+function today(){ return new Date().toISOString().split('T')[0]; }
+function todayDow(){ return new Date().getDay(); }
+function todayDom(){ return new Date().getDate(); }
+function todayMonth(){ return new Date().getMonth(); }
+function todayQuarter(){ return Math.floor(new Date().getMonth()/3); }
+
+function load(){
+  try{tasks=JSON.parse(localStorage.getItem(SK_TASKS))||[];}catch(e){tasks=[];}
+  try{recurring=JSON.parse(localStorage.getItem(SK_REC))||[];}catch(e){recurring=[];}
+  try{projects=JSON.parse(localStorage.getItem(SK_PROJ))||[];}catch(e){projects=[];}
+  try{sollicitaties=JSON.parse(localStorage.getItem(SK_SOL))||[];}catch(e){sollicitaties=[];}
+  if(!tasks.length) tasks=defaultTasks();
+  if(!recurring.length) recurring=defaultRecurring();
+  injectRecurring();
+}
+function save(){ localStorage.setItem(SK_TASKS,JSON.stringify(tasks)); }
+function saveRec(){ localStorage.setItem(SK_REC,JSON.stringify(recurring)); }
+function saveProj(){ localStorage.setItem(SK_PROJ,JSON.stringify(projects)); }
+function saveSol(){ localStorage.setItem(SK_SOL,JSON.stringify(sollicitaties)); }
+
+function defaultTasks(){
+  return [
+    {id:nextId++,name:'Mail beantwoorden',energy:'laag',time:'5 min',done:false,date:today(),source:'',execdate:'',deadline:'',link:''},
+    {id:nextId++,name:'LinkedIn post schrijven',energy:'mid',time:'15 min',done:false,date:today(),source:'',execdate:'',deadline:'',link:''},
+    {id:nextId++,name:'Eerste stap groot project bepalen',energy:'hoog',time:'30 min',done:false,date:today(),source:'',execdate:'',deadline:'',link:''},
+  ];
+}
+function defaultRecurring(){
+  return [
+    {id:nextId++,name:'Weekplanning maken',energy:'mid',time:'15 min',freq:'mon'},
+    {id:nextId++,name:'BTW aangifte',energy:'hoog',time:'2 uur',freq:'quarterly'},
+    {id:nextId++,name:'Facturen checken',energy:'laag',time:'15 min',freq:'fri'},
+    {id:nextId++,name:'Inbox naar nul',energy:'laag',time:'30 min',freq:'daily'},
+  ];
+}
+
+function shouldInjectToday(r){
+  const dow=todayDow(),dom=todayDom(),month=todayMonth();
+  if(r.freq==='daily') return true;
+  if(r.freq==='weekly') return dow===1;
+  if(dayMap[r.freq]===dow) return true;
+  if(r.freq==='monthly' && dom===1) return true;
+  if(r.freq==='quarterly' && dom===1 && month%3===0) return true;
+  if(r.freq==='yearly' && dom===1 && month===0) return true;
+  return false;
+}
+function injectRecurring(){
+  const t=today();
+  recurring.forEach(r=>{
+    if(shouldInjectToday(r) && !tasks.find(x=>x.recurring_id===r.id && x.date===t)){
+      tasks.push({id:nextId++,name:r.name,energy:r.energy,time:r.time,done:false,date:t,source:'',execdate:'',deadline:'',link:'',recurring_id:r.id});
+    }
+  });
+  save();
+}
+
+function switchTab(tab){
+  currentTab=tab;
+  ['today','week','recurring','projects','sollicitaties','all'].forEach(t=>{
+    document.getElementById('tab-'+t).style.display=t===tab?'':'none';
+    const btn=document.querySelector('[data-tab="'+t+'"]');
+    if(btn) btn.classList.toggle('active',t===tab);
+  });
+  document.getElementById('fab').style.display=(tab==='today'||tab==='all')?'':'none';
+  if(tab==='today') renderToday();
+  else if(tab==='week') renderWeek();
+  else if(tab==='recurring') renderRecurring();
+  else if(tab==='projects') renderProjects();
+  else if(tab==='sollicitaties') renderSollicitaties();
+  else renderAll();
+}
+
+function toggleEnergy(e){
+  activeEnergy=activeEnergy===e?null:e;
+  ['hoog','mid','laag'].forEach(x=>{
+    document.getElementById('et-'+x).className='etab'+(x===activeEnergy?' act-'+x:'');
+  });
+  document.getElementById('ehint').textContent=activeEnergy?hints[activeEnergy]:'';
+  renderToday();
+}
+
+function isOverdue(t){ return t.deadline && t.deadline < today() && !t.done; }
+
+function renderToday(){
+  let list=tasks.filter(t=>t.date===today()&&!t.done);
+  if(activeEnergy) list=list.filter(t=>t.energy===activeEnergy);
+  list.sort((a,b)=>{
+    if(a.deadline&&!b.deadline) return -1;
+    if(!a.deadline&&b.deadline) return 1;
+    if(a.deadline&&b.deadline) return a.deadline.localeCompare(b.deadline);
+    return 0;
+  });
+  const total=tasks.filter(t=>t.date===today()).length;
+  const done=tasks.filter(t=>t.date===today()&&t.done).length;
+  const pct=total?Math.round((done/total)*100):0;
+  document.getElementById('prog').style.width=pct+'%';
+  document.getElementById('prog-label').textContent=done+' van '+total;
+  document.getElementById('today-count').textContent=list.length;
+
+  const clientId=localStorage.getItem(SK_CLIENT),token=localStorage.getItem(SK_TOKEN);
+  const gb=document.getElementById('gmail-btn'),gl=document.getElementById('gmail-label');
+  if(clientId&&token){gb.className='gmail-btn connected';gl.textContent='Gmail opnieuw scannen';}
+  else if(clientId){gb.className='gmail-btn';gl.textContent='Inloggen en Gmail scannen';}
+  else{gb.className='gmail-btn';gl.textContent='Gmail koppelen voor actiepunten';}
+
+  document.getElementById('today-list').innerHTML=list.length
+    ?list.map(t=>taskHTML(t)).join('')
+    :'<div class="empty"><div class="empty-icon">○</div>'+(activeEnergy?'Geen taken voor dit energieniveau.':'Geen open taken vandaag.')+'</div>';
+}
+
+function fmtDate(d){
+  if(!d) return '';
+  const x=new Date(d+'T12:00');
+  return x.toLocaleDateString('nl-NL',{day:'numeric',month:'short'});
+}
+
+function taskHTML(t){
+  const od=isOverdue(t);
+  return '<div class="task e-'+t.energy+(t.done?' done':'')+(od?' overdue':'')+'">'
+    +'<button class="check" onclick="toggle('+t.id+')">'
+    +(t.done?'<svg width="12" height="10" viewBox="0 0 12 10"><polyline points="1,5 4.5,8.5 11,1.5" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>':'')
+    +'</button>'
+    +'<div class="task-body">'
+    +'<div class="task-name">'+esc(t.name)+'</div>'
+    +(t.note?'<div class="task-note">'+esc(t.note)+'</div>':'')
+    +(t.link?'<a class="task-link" href="'+esc(t.link)+'" target="_blank">'+esc(t.link.replace(/^https?:\/\//,'').slice(0,50))+'</a>':'')
+    +'<div class="task-meta">'
+    +'<span class="pill pill-'+t.energy+'">'+eL[t.energy]+'</span>'
+    +'<span class="pill pill-t">'+t.time+'</span>'
+    +(t.execdate&&t.execdate!==today()?'<span class="pill pill-date">📅 '+fmtDate(t.execdate)+'</span>':'')
+    +(t.deadline?'<span class="pill pill-deadline'+(od?' ":style="background:#fdecea"':'"')+'">⚠ '+fmtDate(t.deadline)+'</span>':'')
+    +(t.source==='gmail'?'<span class="pill pill-gmail">Gmail</span>':'')
+    +(t.source==='sollicitatie'?'<span class="pill pill-sol">Sollicitatie</span>':'')
+    +'</div></div>'
+    +'<div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">'
+    +'<button class="del-btn" onclick="del('+t.id+')" title="Verwijder">×</button>'
+    +'<button class="del-btn" onclick="openEdit('+t.id+')" title="Bewerk" style="font-size:13px">✎</button>'
+    +'</div>'
+    +'</div>';
+}
+
+function renderWeek(){
+  const d=new Date(),dow=d.getDay();
+  const offset=dow===0?-6:1-dow;
+  const mon=new Date(d);mon.setDate(d.getDate()+offset);
+  const sun=new Date(mon);sun.setDate(mon.getDate()+6);
+  const fmt=x=>x.toLocaleDateString('nl-NL',{day:'numeric',month:'long'});
+  document.getElementById('week-range').textContent=fmt(mon)+' – '+fmt(sun);
+  const weekDates=Array.from({length:7},(_,i)=>{const x=new Date(mon);x.setDate(mon.getDate()+i);return x.toISOString().split('T')[0];});
+  const wt=tasks.filter(t=>weekDates.includes(t.date));
+  const done=wt.filter(t=>t.done),open=wt.filter(t=>!t.done);
+  const byE=e=>wt.filter(t=>t.energy===e).length;
+  const deadlines=tasks.filter(t=>t.deadline&&weekDates.includes(t.deadline)&&!t.done);
+  const dayNames=['Zondag','Maandag','Dinsdag','Woensdag','Donderdag','Vrijdag','Zaterdag'];
+  const dayRows=weekDates.map(dateStr=>{
+    const dayTasks=tasks.filter(t=>t.date===dateStr);
+    if(!dayTasks.length) return '';
+    const x=new Date(dateStr+'T12:00');
+    const isToday=dateStr===today();
+    const label=(isToday?'Vandaag — ':'')+dayNames[x.getDay()]+' '+x.getDate()+' '+fmt(x).split(' ')[1];
+    return '<div class="week-day">'
+      +'<div class="week-day-header" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display===\'none\'?\'\':\'none\'">'
+      +'<div class="week-day-label">'+label+'</div>'
+      +'<div class="week-day-count">'+dayTasks.filter(t=>t.done).length+'/'+dayTasks.length+'</div>'
+      +'</div>'
+      +'<div class="week-day-tasks">'
+      +dayTasks.map(t=>'<div class="week-task-row">'
+        +'<div class="week-task-dot" style="background:var(--'+t.energy+')"></div>'
+        +'<span class="week-task-name'+(t.done?' done':'')+'">'+esc(t.name)+'</span>'
+        +'<span class="week-task-meta">'+(t.deadline?'⚠ '+fmtDate(t.deadline):t.time)+'</span>'
+        +'</div>').join('')
+      +'</div></div>';
+  }).join('');
+  document.getElementById('week-content').innerHTML=
+    '<div class="week-card"><div class="week-card-title">Samenvatting</div>'
+    +'<div class="week-stat"><span class="week-stat-label">Ingepland</span><span class="week-stat-val">'+wt.length+'</span></div>'
+    +'<div class="week-stat"><span class="week-stat-label">Afgerond</span><span class="week-stat-val" style="color:var(--laag)">'+done.length+'</span></div>'
+    +'<div class="week-stat"><span class="week-stat-label">Open</span><span class="week-stat-val">'+open.length+'</span></div>'
+    +'<div class="week-stat"><span class="week-stat-label">⚡ Scherp</span><span class="week-stat-val">'+byE('hoog')+'</span></div>'
+    +'<div class="week-stat"><span class="week-stat-label">☁️ Gewoon</span><span class="week-stat-val">'+byE('mid')+'</span></div>'
+    +'<div class="week-stat"><span class="week-stat-label">🌿 Moe</span><span class="week-stat-val">'+byE('laag')+'</span></div>'
+    +'</div>'
+    +(deadlines.length?'<div class="week-card"><div class="week-card-title">Deadlines deze week</div><ul class="week-done-list">'+deadlines.map(t=>'<li style="color:var(--text)">'+fmtDate(t.deadline)+' — '+esc(t.name)+'</li>').join('')+'</ul></div>':'')
+    +(dayRows?'<div style="margin-top:4px"><div class="sec-head"><div class="sec-title">Per dag</div></div>'+dayRows+'</div>':'');
+}
+
+function renderRecurring(){
+  document.getElementById('rec-list').innerHTML=recurring.length
+    ?recurring.map(r=>'<div class="rec-card"><div class="rec-dot e-'+r.energy+'"></div><div class="rec-body"><div class="rec-name">'+esc(r.name)+'</div><div class="rec-meta">'+fL[r.freq]+' · '+r.time+' · '+eL[r.energy]+'</div></div><button class="rec-del" onclick="delRec('+r.id+')">×</button></div>').join('')
+    :'<div class="empty"><div class="empty-icon">↻</div>Nog geen terugkerende taken.</div>';
+}
+function addRecurring(){
+  const name=document.getElementById('rec-name').value.trim();
+  if(!name) return;
+  const r={id:nextId++,name,energy:document.getElementById('rec-energy').value,time:document.getElementById('rec-time').value,freq:document.getElementById('rec-freq').value};
+  recurring.push(r);saveRec();injectRecurring();
+  document.getElementById('rec-name').value='';
+  renderRecurring();
+}
+function delRec(id){recurring=recurring.filter(r=>r.id!==id);saveRec();renderRecurring();}
+
+// ── PROJECTS ──────────────────────────────────────────────────
+function renderProjects(){
+  const aiKey=localStorage.getItem(SK_AIKEY);
+  document.getElementById('api-notice').style.display=aiKey?'none':'block';
+  document.getElementById('proj-list').innerHTML=projects.length
+    ?projects.map(p=>projHTML(p)).join('')
+    :'<div class="empty"><div class="empty-icon">◇</div>Nog geen projecten. Voeg er een toe hieronder.</div>';
+}
+
+function allSubtasks(p){ return p.phases.flatMap(ph=>ph.subtasks); }
+
+function projHTML(p){
+  // migrate old format
+  if(!p.phases) p.phases=[{id:nextId++,name:'Taken',subtasks:p.subtasks||[]}];
+  const total=allSubtasks(p).length;
+  const done=allSubtasks(p).filter(s=>s.done).length;
+  return '<div class="proj-card">'
+    +'<div class="proj-header" onclick="toggleProj('+p.id+')">'
+    +'<div class="proj-name">'+esc(p.name)+'</div>'
+    +(total?'<div class="proj-count">'+done+'/'+total+'</div>':'')
+    +'<div class="proj-toggle" id="proj-toggle-'+p.id+'">▶</div>'
+    +'</div>'
+    +'<div class="proj-body" id="proj-body-'+p.id+'">'
+    +p.phases.map(ph=>phaseHTML(p.id,ph)).join('')
+    +'<div class="add-phase-row">'
+    +'<input id="phase-input-'+p.id+'" placeholder="Nieuwe fase toevoegen (bijv. Uitvoering)…" onkeydown="if(event.key===\'Enter\')addPhase('+p.id+')" />'
+    +'<button onclick="addPhase('+p.id+')">+ Fase</button>'
+    +'</div>'
+    +'<div class="proj-footer">'
+    +'<button onclick="addNextSubToToday('+p.id+')">Volgende stap → vandaag</button>'
+    +'<button class="del-proj-btn" onclick="delProj('+p.id+')">Verwijder project</button>'
+    +'</div>'
+    +'</div>'
+    +'</div>';
+}
+
+function phaseHTML(pid,ph){
+  const done=ph.subtasks.filter(s=>s.done).length,total=ph.subtasks.length;
+  return '<div class="phase-block" id="phase-'+ph.id+'">'
+    +'<div class="phase-header" onclick="togglePhase('+ph.id+')">'
+    +'<div class="phase-label">'+esc(ph.name)+'</div>'
+    +'<div class="phase-count">'+done+'/'+total+'</div>'
+    +'<div class="phase-toggle" id="phase-tog-'+ph.id+'">▾</div>'
+    +'</div>'
+    +'<div id="phase-tasks-'+ph.id+'">'
+    +'<div class="phase-tasks">'
+    +(ph.subtasks.length?ph.subtasks.map(s=>subHTML(pid,ph.id,s)).join('')
+      :'<div style="font-size:13px;color:var(--muted);padding:4px 0">Nog geen stappen in deze fase.</div>')
+    +'<div class="phase-add-sub">'
+    +'<input id="sub-inp-'+ph.id+'" placeholder="Nieuwe stap…" onkeydown="if(event.key===\'Enter\')addSub('+pid+','+ph.id+')" />'
+    +'<input type="date" id="sub-date-'+ph.id+'" />'
+    +'<button onclick="addSub('+pid+','+ph.id+')">+ Voeg toe</button>'
+    +'</div>'
+    +'</div>'
+    +'</div>'
+    +'</div>';
+}
+
+function subHTML(pid,phid,s){
+  const dpill=s.date?datePill(s.date):'';
+  const aiKey=localStorage.getItem(SK_AIKEY);
+  return '<div class="subtask'+(s.done?' done':'')+'" id="sub-row-'+s.id+'">'
+    +'<button class="sub-check" onclick="toggleSub('+pid+','+phid+','+s.id+')">'+
+    (s.done?'<svg width="10" height="8" viewBox="0 0 10 8"><polyline points="1,4 3.5,6.5 9,1" stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>':'')
+    +'</button>'
+    +'<div class="sub-body">'
+    +'<div class="sub-name">'+esc(s.name)+'</div>'
+    +(dpill?'<div class="sub-meta">'+dpill+'</div>':'')
+    +'<div id="sub-split-result-'+s.id+'" class="sub-split-result"></div>'
+    +'</div>'
+    +'<div class="sub-actions">'
+    +(s.date?'<button class="sub-send" onclick="sendSubToDate('+pid+','+phid+','+s.id+')" title="Naar takenlijst op datum">→</button>':'')
+    +'<button class="sub-edit-btn" onclick="openSubEdit('+pid+','+phid+','+s.id+')" title="Bewerk stap">✎</button>'
+    +(aiKey?'<button class="sub-split-btn" onclick="aiSplitSub('+pid+','+phid+','+s.id+')" title="Splits verder met AI">✦</button>':'')
+    +'<button class="sub-del" onclick="delSub('+pid+','+phid+','+s.id+')">×</button>'
+    +'</div>'
+    +'</div>';
+}
+
+function datePill(d){
+  const cls=d===today()?'today':d<today()?'past':'';
+  return '<span class="sub-date-pill '+cls+'">'+fmtDate(d)+'</span>';
+}
+
+function toggleProj(id){
+  const body=document.getElementById('proj-body-'+id);
+  const tog=document.getElementById('proj-toggle-'+id);
+  const open=body.style.display!=='none'&&body.style.display!=='';
+  body.style.display=open?'none':'block';
+  tog.style.transform=open?'':'rotate(90deg)';
+}
+function togglePhase(phid){
+  const el=document.getElementById('phase-tasks-'+phid);
+  const tog=document.getElementById('phase-tog-'+phid);
+  const open=el.style.display!=='none';
+  el.style.display=open?'none':'';
+  tog.style.transform=open?'':'rotate(-90deg)';
+}
+
+function addProject(){
+  const name=document.getElementById('proj-name').value.trim();
+  if(!name) return;
+  const defaultPhases=[{id:nextId++,name:'Onderzoek',subtasks:[]},{id:nextId++,name:'Uitvoering',subtasks:[]},{id:nextId++,name:'Afronding',subtasks:[]}];
+  projects.push({id:nextId++,name,phases:defaultPhases});
+  saveProj();document.getElementById('proj-name').value='';renderProjects();
+}
+function delProj(id){projects=projects.filter(p=>p.id!==id);saveProj();renderProjects();}
+
+function addPhase(pid){
+  const inp=document.getElementById('phase-input-'+pid);
+  const name=inp.value.trim();if(!name)return;
+  const p=projects.find(x=>x.id===pid);
+  if(p){p.phases.push({id:nextId++,name,subtasks:[]});saveProj();renderProjects();setTimeout(()=>{document.getElementById('proj-body-'+pid).style.display='block';document.getElementById('proj-toggle-'+pid).style.transform='rotate(90deg)';},10);}
+}
+
+function addSub(pid,phid){
+  const inp=document.getElementById('sub-inp-'+phid);
+  const name=inp.value.trim();if(!name)return;
+  const dateVal=document.getElementById('sub-date-'+phid).value;
+  const p=projects.find(x=>x.id===pid);
+  if(!p)return;
+  const ph=p.phases.find(x=>x.id===phid);
+  if(ph){
+    ph.subtasks.push({id:nextId++,name,done:false,date:dateVal});
+    if(dateVal){
+      tasks.push({id:nextId++,name:p.name+': '+name,energy:'mid',time:'30 min',done:false,date:dateVal,execdate:dateVal,deadline:'',link:'',note:'',source:'project',proj_id:pid});
+      save();
+    }
+    saveProj();inp.value='';document.getElementById('sub-date-'+phid).value='';
+    renderProjects();
+    setTimeout(()=>{document.getElementById('proj-body-'+pid).style.display='block';document.getElementById('proj-toggle-'+pid).style.transform='rotate(90deg)';document.getElementById('phase-tasks-'+phid).style.display='';},10);
+  }
+}
+
+function toggleSub(pid,phid,sid){
+  const p=projects.find(x=>x.id===pid);if(!p)return;
+  const ph=p.phases.find(x=>x.id===phid);if(!ph)return;
+  const s=ph.subtasks.find(x=>x.id===sid);
+  if(s){s.done=!s.done;saveProj();renderProjects();
+    setTimeout(()=>{document.getElementById('proj-body-'+pid).style.display='block';document.getElementById('proj-toggle-'+pid).style.transform='rotate(90deg)';document.getElementById('phase-tasks-'+phid).style.display='';},10);}
+}
+function delSub(pid,phid,sid){
+  const p=projects.find(x=>x.id===pid);if(!p)return;
+  const ph=p.phases.find(x=>x.id===phid);if(!ph)return;
+  ph.subtasks=ph.subtasks.filter(s=>s.id!==sid);
+  saveProj();renderProjects();
+  setTimeout(()=>{document.getElementById('proj-body-'+pid).style.display='block';document.getElementById('proj-toggle-'+pid).style.transform='rotate(90deg)';document.getElementById('phase-tasks-'+phid).style.display='';},10);
+}
+function sendSubToDate(pid,phid,sid){
+  const p=projects.find(x=>x.id===pid);if(!p)return;
+  const ph=p.phases.find(x=>x.id===phid);if(!ph)return;
+  const s=ph.subtasks.find(x=>x.id===sid);if(!s)return;
+  const d=s.date||today();
+  if(!tasks.find(t=>t.proj_id===pid&&t.name===p.name+': '+s.name&&t.date===d)){
+    tasks.push({id:nextId++,name:p.name+': '+s.name,energy:'mid',time:'30 min',done:false,date:d,execdate:d,deadline:'',link:'',note:'',source:'project',proj_id:pid});
+    save();
+  }
+  if(currentTab==='today') renderToday();
+}
+function addNextSubToToday(pid){
+  const p=projects.find(x=>x.id===pid);if(!p)return;
+  const next=allSubtasks(p).find(s=>!s.done);
+  if(!next){alert('Alle stappen van dit project zijn afgerond!');return;}
+  if(!tasks.find(t=>t.proj_id===pid&&t.name===p.name+': '+next.name&&t.date===today())){
+    tasks.push({id:nextId++,name:p.name+': '+next.name,energy:'mid',time:'30 min',done:false,date:today(),execdate:'',deadline:'',link:'',note:'',source:'project',proj_id:pid});
+    save();
+  }
+  if(currentTab==='today') renderToday();
+}
+
+async function aiSplitProject(){
+  const name=document.getElementById('proj-name').value.trim();
+  if(!name){alert('Vul eerst een projectnaam in.');return;}
+  let apiKey=localStorage.getItem(SK_AIKEY);
+  if(!apiKey){document.getElementById('ai-modal').style.display='flex';return;}
+  const loading=document.getElementById('ai-loading');
+  loading.textContent='Claude denkt na over fases en stappen…';
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        system:'Je bent een productiviteitsassistent. Splits het project in 2-4 fases, elk met 2-4 concrete kleine stappen. Geef ALLEEN een JSON-array terug, geen uitleg, geen markdown. Formaat: [{"fase":"Fase naam","stappen":["Stap 1","Stap 2"]}]',
+        messages:[{role:'user',content:'Project: '+name}]
+      })
+    });
+    const data=await resp.json();
+    if(data.error){loading.textContent='Fout: '+data.error.message;return;}
+    const raw=data.content[0].text.replace(/```json|```/g,'').trim();
+    const fases=JSON.parse(raw);
+    const p={id:nextId++,name,phases:fases.map(f=>({id:nextId++,name:f.fase,subtasks:f.stappen.map(s=>({id:nextId++,name:s,done:false,date:''}))}))}; 
+    projects.push(p);saveProj();
+    document.getElementById('proj-name').value='';
+    loading.textContent='';
+    renderProjects();
+    setTimeout(()=>{document.getElementById('proj-body-'+p.id).style.display='block';document.getElementById('proj-toggle-'+p.id).style.transform='rotate(90deg)';},50);
+  }catch(e){loading.textContent='Fout bij ophalen — controleer je API-sleutel.';console.error(e);}
+}
+
+// ── SOLLICITATIES ─────────────────────────────────────────────
+function renderSollicitaties(){
+  const active=sollicitaties.filter(s=>s.status!=='afgewezen'&&s.status!=='aangenomen').length;
+  document.getElementById('sol-subline').textContent=active+' actief';
+  if(!sollicitaties.length){
+    document.getElementById('sol-list').innerHTML='<div class="empty"><div class="empty-icon">◎</div>Nog geen sollicitaties. Voeg ze toe om bij te houden.</div>';
+    return;
+  }
+  const order=['aangenomen','gesprek','test','gestuurd','afgewezen'];
+  const sorted=[...sollicitaties].sort((a,b)=>order.indexOf(a.status)-order.indexOf(b.status));
+  document.getElementById('sol-list').innerHTML=sorted.map(s=>
+    '<div class="sol-card">'
+    +'<div class="sol-top">'
+    +'<div><div class="sol-company">'+esc(s.company)+'</div><div class="sol-role">'+esc(s.role)+'</div></div>'
+    +'<button class="sol-status-pill s-'+s.status+'" onclick="cycleSolStatus('+s.id+')">'+statLabels[s.status]+'</button>'
+    +'</div>'
+    +'<div class="sol-meta">'
+    +(s.link?'<a class="sol-link" href="'+esc(s.link)+'" target="_blank">Vacature ↗</a>':'')
+    +(s.date?'<span class="sol-date">Gesolliciteerd: '+fmtDate(s.date)+'</span>':'')
+    +(s.deadline?'<span class="sol-date" style="color:var(--sol)">⚠ deadline '+fmtDate(s.deadline)+'</span>':'')
+    +'<button class="sol-del" onclick="delSol('+s.id+')">×</button>'
+    +'</div>'
+    +'</div>'
+  ).join('');
+}
+const solStatusCycle=['gestuurd','gesprek','test','aangenomen','afgewezen'];
+function cycleSolStatus(id){
+  const s=sollicitaties.find(x=>x.id===id);
+  if(s){const i=solStatusCycle.indexOf(s.status);s.status=solStatusCycle[(i+1)%solStatusCycle.length];saveSol();renderSollicitaties();}
+}
+function addSollicitatie(){
+  const company=document.getElementById('sol-company').value.trim();
+  const role=document.getElementById('sol-role').value.trim();
+  if(!company||!role){alert('Vul minimaal bedrijfsnaam en functie in.');return;}
+  const link=document.getElementById('sol-link').value.trim();
+  const deadline=document.getElementById('sol-deadline').value;
+  const s={id:nextId++,company,role,link,status:document.getElementById('sol-status').value,date:document.getElementById('sol-date').value,deadline};
+  sollicitaties.push(s);saveSol();
+  if(document.getElementById('sol-as-task').checked){
+    const taskName='Solliciteer bij '+company+' — '+role;
+    tasks.push({id:nextId++,name:taskName,energy:'mid',time:'1 uur',done:false,date:today(),execdate:'',deadline,link,source:'sollicitatie'});
+    save();
+  }
+  ['sol-company','sol-role','sol-link'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('sol-deadline').value='';
+  document.getElementById('sol-as-task').checked=false;
+  renderSollicitaties();
+}
+function delSol(id){sollicitaties=sollicitaties.filter(s=>s.id!==id);saveSol();renderSollicitaties();}
+
+// ── ALL ───────────────────────────────────────────────────────
+function renderAll(){
+  const grouped={};
+  tasks.forEach(t=>{if(!grouped[t.date])grouped[t.date]=[];grouped[t.date].push(t);});
+  const dates=Object.keys(grouped).sort((a,b)=>b.localeCompare(a));
+  const el=document.getElementById('all-list');
+  if(!dates.length){el.innerHTML='<div class="empty"><div class="empty-icon">○</div>Geen taken.</div>';return;}
+  el.innerHTML=dates.map(d=>{
+    const label=d===today()?'Vandaag':new Date(d+'T12:00').toLocaleDateString('nl-NL',{weekday:'long',day:'numeric',month:'long'});
+    return '<div class="sec-head" style="margin-top:18px"><div class="sec-title">'+label+'</div><div class="sec-badge">'+grouped[d].length+'</div></div>'+grouped[d].map(t=>taskHTML(t)).join('');
+  }).join('');
+}
+
+// ── TASK ACTIONS ──────────────────────────────────────────────
+function toggle(id){const t=tasks.find(x=>x.id===id);if(t){t.done=!t.done;save();renderCurrent();}}
+function del(id){tasks=tasks.filter(x=>x.id!==id);save();renderCurrent();}
+function addTask(){
+  const name=document.getElementById('new-task').value.trim();
+  if(!name) return;
+  const execdate=document.getElementById('new-execdate').value;
+  tasks.push({id:nextId++,name,energy:document.getElementById('new-energy').value,time:document.getElementById('new-time').value,done:false,date:execdate||today(),execdate,deadline:document.getElementById('new-deadline').value,link:document.getElementById('new-link').value.trim(),note:'',source:''});
+  document.getElementById('new-task').value='';
+  document.getElementById('new-link').value='';
+  document.getElementById('new-deadline').value='';
+  document.getElementById('new-execdate').value='';
+  save();renderCurrent();
+}
+function renderCurrent(){if(currentTab==='today')renderToday();else if(currentTab==='all')renderAll();}
+
+// ── GMAIL ─────────────────────────────────────────────────────
+function handleGmail(){
+  const clientId=localStorage.getItem(SK_CLIENT);
+  if(!clientId){openSetupModal();return;}
+  const token=localStorage.getItem(SK_TOKEN);
+  if(!token){doGmailAuth(clientId);return;}
+  scanGmail(token);
+}
+function openSetupModal(){document.getElementById('origin-block').textContent=window.location.origin||'file://';document.getElementById('modal').style.display='flex';}
+function closeModal(){document.getElementById('modal').style.display='none';}
+function closeModalOutside(e){if(e.target.id==='modal')closeModal();}
+function copyOrigin(){try{navigator.clipboard.writeText(document.getElementById('origin-block').textContent);}catch(e){}}
+function saveClientId(){
+  const val=document.getElementById('client-id-input').value.trim();
+  if(!val||!val.includes('.apps.googleusercontent.com')){alert('Vul een geldig Client ID in.');return;}
+  localStorage.setItem(SK_CLIENT,val);closeModal();doGmailAuth(val);
+}
+function doGmailAuth(clientId){
+  const scope=encodeURIComponent('https://www.googleapis.com/auth/gmail.readonly');
+  const redirect=encodeURIComponent(window.location.href.split('?')[0].split('#')[0]);
+  window.location.href='https://accounts.google.com/o/oauth2/v2/auth?client_id='+clientId+'&redirect_uri='+redirect+'&response_type=token&scope='+scope;
+}
+function checkOAuthReturn(){
+  const hash=window.location.hash;
+  if(!hash.includes('access_token'))return;
+  const params=new URLSearchParams(hash.replace('#',''));
+  const token=params.get('access_token');
+  if(token){localStorage.setItem(SK_TOKEN,token);window.history.replaceState({},'',window.location.pathname);scanGmail(token);}
+}
+async function scanGmail(token){
+  const gl=document.getElementById('gmail-label'),gb=document.getElementById('gmail-btn');
+  gl.textContent='Scannen…';gb.style.pointerEvents='none';
+  try{
+    const q=encodeURIComponent('is:unread -category:promotions -category:social');
+    const res=await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=20&q='+q,{headers:{Authorization:'Bearer '+token}});
+    if(res.status===401){localStorage.removeItem(SK_TOKEN);gl.textContent='Sessie verlopen — klik om opnieuw in te loggen';gb.style.pointerEvents='';gb.className='gmail-btn';renderToday();return;}
+    const data=await res.json();
+    const msgs=data.messages||[];
+    let added=0;
+    for(const m of msgs.slice(0,15)){
+      const mRes=await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/'+m.id+'?format=metadata&metadataHeaders=Subject&metadataHeaders=From',{headers:{Authorization:'Bearer '+token}});
+      const mData=await mRes.json();
+      const headers=mData.payload?.headers||[];
+      const subject=headers.find(h=>h.name==='Subject')?.value||'(geen onderwerp)';
+      const from=headers.find(h=>h.name==='From')?.value||'';
+      const fromName=from.replace(/<[^>]+>/,'').replace(/"/g,'').trim()||from;
+      const name='Reageer: '+subject.slice(0,50)+(fromName?' ('+fromName.slice(0,20)+')':'');
+      if(!tasks.find(t=>t.gmail_id===m.id)){tasks.push({id:nextId++,name,energy:'laag',time:'5 min',done:false,date:today(),source:'gmail',execdate:'',deadline:'',link:'',gmail_id:m.id});added++;}
+    }
+    save();gb.className='gmail-btn connected';
+    gl.textContent=added>0?added+' nieuwe actiepunten toegevoegd':'Geen nieuwe ongelezen mails';
+    gb.style.pointerEvents='';renderToday();
+  }catch(e){gl.textContent='Fout bij ophalen — probeer opnieuw';gb.style.pointerEvents='';}
+}
+
+// ── AI KEY MODAL ──────────────────────────────────────────────
+function closeAiModal(){document.getElementById('ai-modal').style.display='none';}
+function closeAiModalOutside(e){if(e.target.id==='ai-modal')closeAiModal();}
+function saveAiKey(){
+  const val=document.getElementById('ai-key-input').value.trim();
+  if(!val||!val.startsWith('sk-')){alert('Vul een geldige API-sleutel in (begint met sk-).');return;}
+  localStorage.setItem(SK_AIKEY,val);closeAiModal();renderProjects();
+  setTimeout(()=>aiSplitProject(),100);
+}
+
+// ── SUB EDIT ──────────────────────────────────────────────────
+let seCtx={pid:null,phid:null,sid:null};
+function openSubEdit(pid,phid,sid){
+  const p=projects.find(x=>x.id===pid);if(!p)return;
+  const ph=p.phases.find(x=>x.id===phid);if(!ph)return;
+  const s=ph.subtasks.find(x=>x.id===sid);if(!s)return;
+  seCtx={pid,phid,sid};
+  document.getElementById('se-name').value=s.name;
+  document.getElementById('se-date').value=s.date||'';
+  document.getElementById('sub-edit-modal').style.display='flex';
+}
+function closeSubEdit(){document.getElementById('sub-edit-modal').style.display='none';}
+function closeSubEditOutside(e){if(e.target.id==='sub-edit-modal')closeSubEdit();}
+function saveSubEdit(){
+  const {pid,phid,sid}=seCtx;
+  const p=projects.find(x=>x.id===pid);if(!p)return;
+  const ph=p.phases.find(x=>x.id===phid);if(!ph)return;
+  const s=ph.subtasks.find(x=>x.id===sid);if(!s)return;
+  s.name=document.getElementById('se-name').value.trim()||s.name;
+  s.date=document.getElementById('se-date').value;
+  saveProj();closeSubEdit();renderProjects();
+  setTimeout(()=>{
+    const body=document.getElementById('proj-body-'+pid);
+    if(body) body.style.display='block';
+    const tog=document.getElementById('proj-toggle-'+pid);
+    if(tog) tog.style.transform='rotate(90deg)';
+    const pt=document.getElementById('phase-tasks-'+phid);
+    if(pt) pt.style.display='';
+  },10);
+}
+
+// ── AI SPLIT SUBTASK ──────────────────────────────────────────
+async function aiSplitSub(pid,phid,sid){
+  const apiKey=localStorage.getItem(SK_AIKEY);
+  if(!apiKey){alert('Stel eerst je Anthropic API-sleutel in via het Projecten tabblad.');return;}
+  const p=projects.find(x=>x.id===pid);if(!p)return;
+  const ph=p.phases.find(x=>x.id===phid);if(!ph)return;
+  const s=ph.subtasks.find(x=>x.id===sid);if(!s)return;
+
+  const resultEl=document.getElementById('sub-split-result-'+sid);
+  if(!resultEl)return;
+  resultEl.innerHTML='<div class="sub-split-loading">✦ Even nadenken…</div>';
+
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:600,
+        system:'Je bent een productiviteitsassistent voor iemand met ADHD. Splits de taak in 3-5 heel concrete, kleine, direct uitvoerbare stappen. Geen vage termen. Geef ALLEEN een JSON-array terug met strings. Voorbeeld: ["Open laptop","Zoek het document op","Schrijf de eerste zin"]',
+        messages:[{role:'user',content:'Taak om op te splitsen: "'+s.name+'" (onderdeel van project: "'+p.name+'", fase: "'+ph.name+'")'}]
+      })
+    });
+    const data=await resp.json();
+    if(data.error){resultEl.innerHTML='<div class="sub-split-loading">Fout: '+esc(data.error.message)+'</div>';return;}
+    const raw=data.content[0].text.replace(/```json|```/g,'').trim();
+    const stappen=JSON.parse(raw);
+
+    // Show preview with checkboxes so user can pick which to keep
+    const checkIds=stappen.map((_,i)=>'sp-chk-'+sid+'-'+i);
+    resultEl.innerHTML='<div class="split-preview">'
+      +'<div class="split-preview-title">Voorstel — selecteer wat je wil toevoegen</div>'
+      +stappen.map((st,i)=>'<div class="split-preview-item"><input type="checkbox" id="'+checkIds[i]+'" checked /><label for="'+checkIds[i]+'">'+esc(st)+'</label></div>').join('')
+      +'<div class="split-confirm-row">'
+      +'<button class="split-cancel-btn" onclick="cancelSplit(\''+sid+'\')">Annuleer</button>'
+      +'<button class="split-confirm-btn" onclick="confirmSplit('+pid+','+phid+','+sid+','+JSON.stringify(stappen).replace(/"/g,'&quot;')+')">Toevoegen aan fase</button>'
+      +'</div>'
+      +'</div>';
+  }catch(e){resultEl.innerHTML='<div class="sub-split-loading">Fout — controleer je API-sleutel.</div>';console.error(e);}
+}
+
+function cancelSplit(sid){
+  const el=document.getElementById('sub-split-result-'+sid);
+  if(el) el.innerHTML='';
+}
+
+function confirmSplit(pid,phid,sid,stappen){
+  const p=projects.find(x=>x.id===pid);if(!p)return;
+  const ph=p.phases.find(x=>x.id===phid);if(!ph)return;
+  const sidxStr=String(sid);
+
+  // Find checked ones
+  const selected=stappen.filter((_,i)=>{
+    const cb=document.getElementById('sp-chk-'+sidxStr+'-'+i);
+    return cb&&cb.checked;
+  });
+  if(!selected.length){cancelSplit(sidxStr);return;}
+
+  // Insert new subtasks right after the original
+  const origIdx=ph.subtasks.findIndex(x=>x.id===sid);
+  const newSubs=selected.map(name=>({id:nextId++,name,done:false,date:''}));
+  ph.subtasks.splice(origIdx+1,0,...newSubs);
+
+  saveProj();renderProjects();
+  setTimeout(()=>{
+    const body=document.getElementById('proj-body-'+pid);
+    if(body) body.style.display='block';
+    const tog=document.getElementById('proj-toggle-'+pid);
+    if(tog) tog.style.transform='rotate(90deg)';
+    const pt=document.getElementById('phase-tasks-'+phid);
+    if(pt) pt.style.display='';
+  },10);
+}
+
+// ── EDIT TASK ─────────────────────────────────────────────────
+let editingId=null;
+function openEdit(id){
+  const t=tasks.find(x=>x.id===id);
+  if(!t) return;
+  editingId=id;
+  document.getElementById('edit-name').value=t.name;
+  document.getElementById('edit-energy').value=t.energy;
+  document.getElementById('edit-time').value=t.time;
+  document.getElementById('edit-execdate').value=t.execdate||'';
+  document.getElementById('edit-deadline').value=t.deadline||'';
+  document.getElementById('edit-link').value=t.link||'';
+  document.getElementById('edit-note').value=t.note||'';
+  document.getElementById('edit-modal').style.display='flex';
+}
+function closeEdit(){document.getElementById('edit-modal').style.display='none';editingId=null;}
+function closeEditOutside(e){if(e.target.id==='edit-modal')closeEdit();}
+function saveEdit(){
+  const t=tasks.find(x=>x.id===editingId);
+  if(!t){closeEdit();return;}
+  const execdate=document.getElementById('edit-execdate').value;
+  t.name=document.getElementById('edit-name').value.trim()||t.name;
+  t.energy=document.getElementById('edit-energy').value;
+  t.time=document.getElementById('edit-time').value;
+  t.execdate=execdate;
+  t.date=execdate||t.date;
+  t.deadline=document.getElementById('edit-deadline').value;
+  t.link=document.getElementById('edit-link').value.trim();
+  t.note=document.getElementById('edit-note').value.trim();
+  save();closeEdit();renderCurrent();
+  if(currentTab==='week') renderWeek();
+}
+
+// ── HEADER ────────────────────────────────────────────────────
+function setHeader(){
+  const h=new Date().getHours();
+  document.getElementById('greeting').textContent=h<12?'Goedemorgen':h<18?'Goedemiddag':'Goedenavond';
+  const d=new Date();
+  const days=['zondag','maandag','dinsdag','woensdag','donderdag','vrijdag','zaterdag'];
+  const months=['januari','februari','maart','april','mei','juni','juli','augustus','september','oktober','november','december'];
+  document.getElementById('date-str').textContent=days[d.getDay()]+' '+d.getDate()+' '+months[d.getMonth()];
+  document.getElementById('new-execdate').placeholder='Uitvoerdatum';
+  document.getElementById('new-deadline').placeholder='Deadline';
+  const today_str=today();
+  document.getElementById('new-execdate').min=today_str;
+  document.getElementById('sol-date').value=today_str;
+}
+
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+document.getElementById('new-task').addEventListener('keydown',e=>{if(e.key==='Enter')addTask();});
+
+load();setHeader();checkOAuthReturn();renderToday();
+</script>
+</body>
+</html>
